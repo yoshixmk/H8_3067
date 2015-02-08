@@ -1,0 +1,70 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:09:11  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex3_4.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex3_4.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex3_4.c        2     #include "delay_function.h" /* 時間待ちの関数 */
+  104 ex3_4.c        3     #include "LCD_function.h" /* SC1602Bの関数 */
+  173 ex3_4.c        4     
+  174 ex3_4.c        5     void main(void)
+  175 ex3_4.c        6     {
+  176 ex3_4.c        7        char str[] = "Hello, world!"; /* 液晶ディスプレイに表示する文字列 */
+  177 ex3_4.c        8        
+  178 ex3_4.c        9        PBDDR = 0xFF; /* PB0～PB7を出力端子として設定する */
+  179 ex3_4.c       10        PBDR = 0xFF; /* PB0～PB7の初期値を1に設定する */
+  180 ex3_4.c       11        
+  181 ex3_4.c       12        /* タイマ1の設定 */
+  182 ex3_4.c       13        TCR1 |= 0x20; /* CCLR1を0，CCLR0を1に設定する */
+  183 ex3_4.c       14        GRA1 = 0x0013; /* 1usの設定 (1/20MHz * (0x0013 + 0x0001)) */
+  184 ex3_4.c       15        
+  185 ex3_4.c       16        /* タイマ2の設定 */
+  186 ex3_4.c       17        TCR2 |= 0x23; /* CCLR1を0，CCLR0を1，TPSC2を0，TPSC1を1, TPSC0を1に設定する */
+  187 ex3_4.c       18        GRA2 = 0x09C3; /* 1msの設定 (1/20MHz * 8 * (0x09C3 + 0x0001)) */
+  188 ex3_4.c       19        
+  189 ex3_4.c       20        LCD_init(); /* SC1602Bの初期化 */
+  190 ex3_4.c       21        
+  191 ex3_4.c       22        while (1) /* 無限ループ */
+  192 ex3_4.c       23        {
+  193 ex3_4.c       24           LCD_clear(); /* 表示クリア */
+  194 ex3_4.c       25           LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  195 ex3_4.c       26           LCD_print(str); /* 液晶ディスプレイに文字列を表示する */
+  196 ex3_4.c       27           delay_ms(1000); /* 1000ms（1秒）だけ時間待ちする */
+  197 ex3_4.c       28           
+  198 ex3_4.c       29           LCD_clear(); /* 表示クリア */
+  199 ex3_4.c       30           LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+  200 ex3_4.c       31           LCD_print(str); /* 液晶ディスプレイに文字列を表示する */
+  201 ex3_4.c       32           delay_ms(1000); /* 1000ms（1秒）だけ時間待ちする */
+  202 ex3_4.c       33        }
+  203 ex3_4.c       34     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:09:11  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000206 Byte(s)
+CONSTANT SECTION(C):                                0x0000000E Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000206 Byte(s)
+TOTAL CONSTANT SECTION: 0x0000000E Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000214 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        3 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        9 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         24 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

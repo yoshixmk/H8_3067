@@ -1,0 +1,13 @@
+   .cpu 300ha:20
+   .import $STACK
+   .import _main
+   .import _sampling_8khz
+   .section VECTOR, common
+   .data.l reset_start
+   .org H'00060
+   .data.l _sampling_8khz
+   .section P, code, align=2
+reset_start:
+   mov.l #($STACK), er7
+   jmp @_main
+   .end

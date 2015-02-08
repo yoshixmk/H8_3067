@@ -1,0 +1,74 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=ex3_3.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input ex3_3
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output ex3_3.abs
+print ex3_3.map
+exit
+** 121 CANNOT FIND SECTION(C)
+** 121 CANNOT FIND SECTION(B)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000003   H'00000004
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000003   H'00000004
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'00000201   H'000000F8
+                                                              ex3_3                              ex3_3                           
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00000201   H'00000102
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  _buzzer                              H'00000176           ENT
+                                  _delay_ms                            H'00000140           ENT
+                                  _delay_us                            H'0000010A           ENT
+                                  _main                                H'00000198           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

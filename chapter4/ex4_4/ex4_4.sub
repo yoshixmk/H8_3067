@@ -1,0 +1,8 @@
+input startup
+input ex4_4
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFFF20)
+start VECTOR(000000), P, C(000100), B(0FFEF20)
+output ex4_4.abs
+print ex4_4.map
+exit

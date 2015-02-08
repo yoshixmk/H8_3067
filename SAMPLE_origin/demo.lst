@@ -1,0 +1,1047 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)16-Jun-2008  10:55:07  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: demo.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 demo.c         1     /**************************************************************************************************
+    2 demo.c         2     このソフトウェアはフリーウェアです。
+    3 demo.c         3     著作権は作成元である(株)北斗電子が所有するものとします。
+    4 demo.c         4     このソフトウェアを使用したことによる全ての損害について、
+    5 demo.c         5     (株)北斗電子は一切の責任を負わないものとします。
+    6 demo.c         6     このソフトウェアの一部または全てを無断で転載することを
+    7 demo.c         7     禁止します。雑誌などへ紹介・収録の場合は連絡をお願い致
+    8 demo.c         8     します。
+    9 demo.c         9     Copyright (C) Hokuto denshi Co,Ltd. 2008
+   10 demo.c        10     **************************************************************************************************/
+   11 demo.c        11     #include "H8_CPU.h"
+  135 demo.c        12     #include "RTL8019AS.h"
+  183 demo.c        13     #include <machine.h>
+  290 demo.c        14     
+  291 demo.c        15     #define         CPUCLK          20000000L
+  292 demo.c        16     #define         SMPLING         8000
+  293 demo.c        17     #define         CNT8KHZ         (unsigned short)(CPUCLK/SMPLING)
+  294 demo.c        18     #define         CNTBASE         (unsigned short)(CPUCLK/40000)
+  295 demo.c        19     
+  296 demo.c        20     unsigned char   myMacAddress[6];                                /* 自分のMACアドレス */
+  297 demo.c        21     const unsigned char     myIpAddress[4] = {192,168,0,10};                /* 自分のIPCアドレス */
+  298 demo.c        22     unsigned char   destMacAddress[6];                              /* 相手のMACアドレス */
+  299 demo.c        23     #define RD_L()          { P6DR&=0xef; }                         /*P64=L 11101111*/
+  300 demo.c        24     #define RD_H()          { P6DR|=0x10; }                         /*P64=H 00010000*/
+  301 demo.c        25     
+  302 demo.c        26     #define WE_L()          { P6DR&=0xdf; }                         /*P65=L 11011111*/
+  303 demo.c        27     #define WE_H()          { P6DR|=0x20; }                         /*P65=H 00100000*/
+  304 demo.c        28     
+  305 demo.c        29     #define BUS_IN()        { P3DDR=0x00; }                         /*P37~P30=INPUT*/
+  306 demo.c        30     #define BUS_OUT()       { P3DDR=0xff; }                         /*P37~P30=OUTPUT*/
+  307 demo.c        31     
+  308 demo.c        32     /* IPアドレス問合せパケットの構造体 (ARP) */
+  309 demo.c        33     typedef struct
+  310 demo.c        34     {       /* Ethernet Header (14 byte)*/
+  311 demo.c        35             unsigned char   destMAC[6];                             /* 相手のMACアドレス（リクエスト時はすべて1） */
+  312 demo.c        36             unsigned char   srcMAC[6];                              /* 自分のMACアドレス */
+  313 demo.c        37             unsigned short  etherType;                              /* 0x0806 (ARP)*/
+  314 demo.c        38             /* ARP (28 byte)*/
+  315 demo.c        39             unsigned short  hardware;                               /* 0x0001 (Ethernet10Mbps)*/
+  316 demo.c        40             unsigned short  protocol;                               /* 0x0800 (IP)*/
+  317 demo.c        41             unsigned char   hLength;                                /* 0x06 (MAC 6byte)*/
+  318 demo.c        42             unsigned char   pLength;                                /* 0x04 (IP 4byte)*/
+  319 demo.c        43             unsigned short  operation;                              /* 0x0001:request, 0x0002:reply*/
+  320 demo.c        44             unsigned char   srcMACarp[6];                           /* 自分のMACアドレス */
+  321 demo.c        45             unsigned char   srcIP[4];                               /* 自分のIPアドレス */
+  322 demo.c        46             unsigned char   destMACarp[6];                          /* 相手のMACアドレス（リクエスト時はすべて0） */
+  323 demo.c        47             unsigned char   destIP[4];                              /* 相手のIPアドレス */
+  324 demo.c        48     }       PacketARP;
+  325 demo.c        49     
+  326 demo.c        50     /* ICMPパケット構造体(ICMP) */
+  327 demo.c        51     typedef struct{
+  328 demo.c        52             /* Ethernet Header (14 byte)*/
+  329 demo.c        53             unsigned char   destMAC[6];                             /* 相手のMACアドレス */
+  330 demo.c        54             unsigned char   srcMAC[6];                              /* 自分のMACアドレス */
+  331 demo.c        55             unsigned short  etherType;                              /* 0x0800 (IP)*/
+  332 demo.c        56     
+  333 demo.c        57             /* IP Header (20 byte)*/
+  334 demo.c        58             unsigned char   vIP_hLength;                            /* 0x45*/
+  335 demo.c        59             unsigned char   serviceType;                            /* 0x00*/
+  336 demo.c        60             unsigned short  lengthIP;                               /* 0x00c8（IPヘッダ以下音声含んで200 byte）*/
+  337 demo.c        61             unsigned short  identification;
+  338 demo.c        62             unsigned short  flags_fragmentOffset;                   /* 0x4000*/
+  339 demo.c        63             unsigned char   ttl;                                    /* 0x00 (0 hop)*/
+  340 demo.c        64             unsigned char   protocol;                               /* 0x11 (UDP)*/
+  341 demo.c        65             unsigned short  checksumIP;                             /* IPヘッダのチェックサム */
+  342 demo.c        66             unsigned char   srcIP[4];                               /* 自分のIPアドレス */
+  343 demo.c        67             unsigned char   destIP[4];                              /* 相手のIPアドレス */
+  344 demo.c        68             /* ICMP Header (8 byte)*/
+  345 demo.c        69     
+  346 demo.c        70             unsigned char   type;
+  347 demo.c        71             unsigned char   code;
+  348 demo.c        72             unsigned short  checksum;
+  349 demo.c        73             unsigned short  id      ;
+  350 demo.c        74             unsigned short  sequence;
+  351 demo.c        75             
+  352 demo.c        76             unsigned char   PingData[1024];                         
+  353 demo.c        77     } PacketICMP;
+  354 demo.c        78     
+  355 demo.c        79     
+  356 demo.c        80     
+  357 demo.c        81     void Wait_LCD ( unsigned long Interval );
+  358 demo.c        82     void Init_LCD ( void );
+  359 demo.c        83     void Clear_LCD ( void );
+  360 demo.c        84     void Locate_LCD ( const unsigned char X, const unsigned char Y );
+  361 demo.c        85     void Print_LCD ( const char *String );
+  362 demo.c        86     void Write_LCD ( const unsigned char RS_Mode , const unsigned char Data );
+  363 demo.c        87     void InitPort(void);
+  364 demo.c        88     void LcdOut(unsigned char lcd_data);
+  365 demo.c        89     void InitRTL8019AS(void);
+  366 demo.c        90     unsigned char getbus(unsigned char );
+  367 demo.c        91     void putbus(unsigned char ,unsigned char );
+  368 demo.c        92     unsigned char databus(int ,unsigned char );
+  369 demo.c        93     char keyin(void);
+  370 demo.c        94     #pragma interrupt (Proc8kHz)
+  371 demo.c        95     void Proc8kHz(void);
+  372 demo.c        96     void SendArpReply(unsigned char *buff);
+  373 demo.c        97     void SendPingMessage(unsigned char *buff);
+  374 demo.c        98     void SendEtherData(unsigned char *buff, unsigned short count);
+  375 demo.c        99     unsigned short GetChecksumIP(unsigned char *buff);
+  376 demo.c       100     char ReceiveEtherData(void);
+  377 demo.c       101     unsigned char CompareIP(unsigned char *pIP1, unsigned char *pIP2);
+  378 demo.c       102     unsigned char CIP(unsigned char *pIP1, unsigned char *pIP2);
+  379 demo.c       103     
+  380 demo.c       104     
+  381 demo.c       105     /*
+  382 demo.c       106     /////////////////////////////////////////////////////////////////////////////////////////
+  383 demo.c       107     //■定数宣言
+  384 demo.c       108     */
+  385 demo.c       109     #define VAL_LCD_ROW             16      /* 横最大 */
+  386 demo.c       110     #define VAL_LCD_COLUMN          2       /* 縦最大 */
+  387 demo.c       111     
+  388 demo.c       112     #define VAL_RS_LOW              0
+  389 demo.c       113     #define VAL_RS_HIGH             1
+  390 demo.c       114     
+  391 demo.c       115     /*
+  392 demo.c       116     /////////////////////////////////////////////////////////////////////////////////////////
+  393 demo.c       117     //■型宣言
+  394 demo.c       118     */
+  395 demo.c       119     typedef struct typeLCD
+  396 demo.c       120     {
+  397 demo.c       121             union 
+  398 demo.c       122             {
+  399 demo.c       123                     struct 
+  400 demo.c       124                     {
+  401 demo.c       125                             unsigned char X : 4;
+  402 demo.c       126                             unsigned char Y : 4;
+  403 demo.c       127                     } BIT;
+  404 demo.c       128                     unsigned char BYTE;
+  405 demo.c       129             } CURSOR;
+  406 demo.c       130     } TYPE_STRUCT_LCD;
+  407 demo.c       131     
+  408 demo.c       132     unsigned char   Buffer[512];                    /* 音声データ受信用 */
+  409 demo.c       133     
+  410 demo.c       134     
+  411 demo.c       135     /*
+  412 demo.c       136     /////////////////////////////////////////////////////////////////////////////////////////
+  413 demo.c       137     //■変数宣言
+  414 demo.c       138     */
+  415 demo.c       139     static TYPE_STRUCT_LCD m_LCDInfo;               /* ＬＣＤ情報 */
+  416 demo.c       140     
+  417 demo.c       141     int main(void){
+  418 demo.c       142     
+  419 demo.c       143     const unsigned short onnkai[7][3]={{38223,19111,9556},  /*ド*/          /*Ｃ*/
+  420 demo.c       144                                     {34052,17026,8513},     /*レ*/          /*Ｄ*/
+  421 demo.c       145                                     {30337,15169,7584},     /*ミ*/          /*Ｅ*/
+  422 demo.c       146                                     {28635,14317,7159},     /*ファ*/        /*Ｆ*/
+  423 demo.c       147                                     {25511,12755,6378},     /*ソ*/          /*Ｇ*/
+  424 demo.c       148                                     {22727,11364,5682},     /*ラ*/          /*Ａ*/
+  425 demo.c       149                                     {20248,10124,5062}};    /*シ*/          /*Ｂ*/
+  426 demo.c       150     
+  427 demo.c       151     
+  428 demo.c       152             char asciicode[]="0123456789ABCDEF";
+  429 demo.c       153             int i;
+  430 demo.c       154             char keyCode[] = " ";
+  431 demo.c       155             char a;
+  432 demo.c       156             InitPort();                                             /* H8ポート関係の初期化 */
+  433 demo.c       157             Init_LCD();                                             /* 液晶表示モジュールの初期化 */
+  434 demo.c       158             InitRTL8019AS();                                        /* Ethernetコントローラの初期化 */
+  435 demo.c       159             Locate_LCD (0,0);
+  436 demo.c       160             set_imask_ccr( 0 );
+  437 demo.c       161     /* A/D,D/Aループテスト */
+  438 demo.c       162             TSTR |= 0x01;                                           /* 割込スタート */
+  439 demo.c       163     /* LCD テスト */        
+  440 demo.c       164             Print_LCD ( "HOKUTODENSHI" );
+  441 demo.c       165     /* SW15 モード切替ＳＷテスト */
+  442 demo.c       166             if ((MDCR & 0x2) == 0){
+  443 demo.c       167                     Locate_LCD (13,0);
+  444 demo.c       168                     Print_LCD ( "B" );                              /* バスモード */
+  445 demo.c       169             }else{
+  446 demo.c       170                     Locate_LCD (13,0);
+  447 demo.c       171                     Print_LCD ( "P" );                              /* シングルモード */
+  448 demo.c       172             }
+  449 demo.c       173                     Locate_LCD (13,0);
+  450 demo.c       174     /* マトリックスキー ＆ BUZZテスト */
+  451 demo.c       175             while(1){
+  452 demo.c       176                     switch(keyin()){
+  453 demo.c       177                             case 0x01:
+  454 demo.c       178                                     GRA1 = onnkai[0][0];    /*ド*/
+  455 demo.c       179                                     GRB1 = onnkai[0][1];
+  456 demo.c       180                                     keyCode[0] = '1';               /* １ */
+  457 demo.c       181                                     break;
+  458 demo.c       182                             case 0x02:
+  459 demo.c       183                                     GRA1 = onnkai[1][0];    /*レ*/
+  460 demo.c       184                                     GRB1 = onnkai[1][1];
+  461 demo.c       185                                     keyCode[0] = '2';               /* ２ */
+  462 demo.c       186                                     break;
+  463 demo.c       187                             case 0x04:
+  464 demo.c       188                                     GRA1 = onnkai[2][0];    /*ミ*/
+  465 demo.c       189                                     GRB1 = onnkai[2][1];
+  466 demo.c       190                                     keyCode[0] = '3';               /* ３ */
+  467 demo.c       191                                     break;
+  468 demo.c       192                             case 0x08:
+  469 demo.c       193                                     GRA1 = onnkai[3][0];    /*ファ*/
+  470 demo.c       194                                     GRB1 = onnkai[3][1];
+  471 demo.c       195                                     keyCode[0] = '4';               /* ４ */
+  472 demo.c       196                                     break;
+  473 demo.c       197                             
+  474 demo.c       198                             case 0x11:
+  475 demo.c       199                                     GRA1 = onnkai[4][0];    /*ソ*/
+  476 demo.c       200                                     GRB1 = onnkai[4][1];
+  477 demo.c       201                                     keyCode[0] = '5';               /* ５ */
+  478 demo.c       202                                     break;
+  479 demo.c       203                             case 0x12:
+  480 demo.c       204                                     GRA1 = onnkai[5][0];    /*ラ*/
+  481 demo.c       205                                     GRB1 = onnkai[5][1];
+  482 demo.c       206                                     keyCode[0] = '6';               /* ６ */
+  483 demo.c       207                                     break;
+  484 demo.c       208                             case 0x14:
+  485 demo.c       209                                     GRA1 = onnkai[6][0];    /*シ*/
+  486 demo.c       210                                     GRB1 = onnkai[6][1];
+  487 demo.c       211                                     keyCode[0] = '7';               /* ７ */
+  488 demo.c       212                                     break;
+  489 demo.c       213                             case 0x18:
+  490 demo.c       214                                     GRA1 = onnkai[0][1];    /*ド*/
+  491 demo.c       215                                     GRB1 = onnkai[0][2];
+  492 demo.c       216                                     keyCode[0] = '8';               /* ８ */
+  493 demo.c       217                                     break;
+  494 demo.c       218                             case 0x21:
+  495 demo.c       219                                     GRA1 = onnkai[1][1];    /*レ*/
+  496 demo.c       220                                     GRB1 = onnkai[1][2];
+  497 demo.c       221     
+  498 demo.c       222                                     keyCode[0] = '9';               /* ９ */
+  499 demo.c       223                                     break;
+  500 demo.c       224                             case 0x22:
+  501 demo.c       225                                     GRA1 = onnkai[2][1];    /*ミ*/
+  502 demo.c       226                                     GRB1 = onnkai[2][2];
+  503 demo.c       227     
+  504 demo.c       228                                     keyCode[0] = '.';               /* ． */
+  505 demo.c       229                                     break;
+  506 demo.c       230                             case 0x24:
+  507 demo.c       231                                     GRA1 = onnkai[3][1];    /*ファ*/
+  508 demo.c       232                                     GRB1 = onnkai[3][2];
+  509 demo.c       233     
+  510 demo.c       234                                     keyCode[0] = '0';               /* ０ */
+  511 demo.c       235                                     break;
+  512 demo.c       236                             case 0x28:
+  513 demo.c       237                                     GRA1 = onnkai[4][1];    /*ソ*/
+  514 demo.c       238                                     GRB1 = onnkai[4][2];
+  515 demo.c       239     
+  516 demo.c       240                                     keyCode[0] = '#';               /* ＃ */
+  517 demo.c       241                                     break;
+  518 demo.c       242                             default:
+  519 demo.c       243                                     GRA1 = 0xffff;
+  520 demo.c       244                                     GRB1 = 0xffff;
+  521 demo.c       245                                     keyCode[0] = ' ';               /* 無効 */
+  522 demo.c       246                     }
+  523 demo.c       247                     Locate_LCD (0,1);
+  524 demo.c       248                     Print_LCD ( keyCode );
+  525 demo.c       249     /* ON OFF SWテスト ＆ D8 D9 LEDテスト */
+  526 demo.c       250                     if (((~P5DR) & 0x2) ==0)        PADR= ((PADR & 0xfb)|0x4);                      /* ポートからキーの状態を入力 */
+  527 demo.c       251                     else                            PADR= ((PADR & 0xfb));                          /* 対応するLEDをON･OFF */
+  528 demo.c       252                     if (((~P5DR) & 0x1) ==0)        PADR= ((PADR & 0xf7)|0x8);                      /* ポートからキーの状態を入力 */
+  529 demo.c       253                     else                            PADR= ((PADR & 0xf7));                          /* 対応するLEDをON･OFF */
+  530 demo.c       254     /* SW15 ID CODE ＳＷテスト */
+  531 demo.c       255                     keyCode[0] = asciicode[((P2DR) & 0x7)];
+  532 demo.c       256                     Locate_LCD (15,0);
+  533 demo.c       257                     Print_LCD ( keyCode );
+  534 demo.c       258                     a = ReceiveEtherData();
+  535 demo.c       259                     
+  536 demo.c       260             }
+  537 demo.c       261     }
+  538 demo.c       262     
+  539 demo.c       263     
+  540 demo.c       264     
+  541 demo.c       265     /***********************************************************
+  542 demo.c       266     **  初期化に関する処理                                    **
+  543 demo.c       267     ***********************************************************/  
+  544 demo.c       268     
+  545 demo.c       269     /* H8ポート関係の初期化 */
+  546 demo.c       270     void InitPort(void){
+  547 demo.c       271     
+  548 demo.c       272             /* port 1 （アドレスバス） */
+  549 demo.c       273             P1DDR = 0xff;
+  550 demo.c       274             P1DR = 0xff;
+  551 demo.c       275             /* port 2 （アドレスバス）*/
+  552 demo.c       276             P2DDR = 0x00;
+  553 demo.c       277             P2PCR = 0xff;
+  554 demo.c       278             /* port 3 （使用しないので出力設定）*/
+  555 demo.c       279             P3DDR = 0xff;
+  556 demo.c       280             P3DR = 0xff;
+  557 demo.c       281             /* port 4 （上位4bitはキースキャン用入力，下位4bitはキースキャン用出力）*/
+  558 demo.c       282             P4DDR = 0xf0;
+  559 demo.c       283             P4PCR = 0x0f;
+  560 demo.c       284             P4DR = 0xff;
+  561 demo.c       285             /* port 5 (4 bits)（下位2bitはキースキャン用プルアップ付き入力）*/
+  562 demo.c       286             P5DDR = 0xfc;
+  563 demo.c       287             P5PCR = 0x03;
+  564 demo.c       288             P5DR = 0xff;
+  565 demo.c       289             /* port 6 （使用しないので出力設定）*/
+  566 demo.c       290             P6DDR = 0xff;
+  567 demo.c       291             P6DR = 0xff;
+  568 demo.c       292             /* port 7 (入力専用) */
+  569 demo.c       293             /* AD，DAと兼用．使用していない端子は外部でプルダウンする */
+  570 demo.c       294             /* port 8 (5 bits) （使用しないので出力設定）*/
+  571 demo.c       295             P8DDR = 0xff;
+  572 demo.c       296             P8DR = 0xff;
+  573 demo.c       297             /* port 9 (6 bits) */
+  574 demo.c       298             P9DDR = 0x13;   /* bit 5,3,2 are input for IRQ5, RXDs */
+  575 demo.c       299             P9DR = 0xff;
+  576 demo.c       300             /* port A （上位2bitはLED点灯用出力，他は使用しないので出力設定）*/
+  577 demo.c       301             PADDR = 0xff;
+  578 demo.c       302             PADR = 0xff;
+  579 demo.c       303             /* port B （下位2bit，上位4bitはLCD制御用出力，他は使用しないので出力設定）*/
+  580 demo.c       304             PBDDR = 0xff;
+  581 demo.c       305             PBDR = 0x00;
+  582 demo.c       306             /* D/A変換 */
+  583 demo.c       307             DACR = 0x40;                                            /* DA ch0 を有効 */
+  584 demo.c       308             /* A/D変換 */
+  585 demo.c       309             ADCSR = 0x00;                                           /* AD ch0を指定 */
+  586 demo.c       310             /* バス制御関係 */
+  587 demo.c       311             WCRH= 0x00;                                             /* アクセス時のウェイトは0 */
+  588 demo.c       312             WCRL= 0x00;
+  589 demo.c       313             /* 16bitタイマ関係 */
+  590 demo.c       314             TSTR = 0xf8;                                            /* タイマ停止  */
+  591 demo.c       315             TSNC = 0x00;                                            /* シンクロなし  */
+  592 demo.c       316             TMDR = 0x02;                                            /* チャネル1はPWM モード その他通常動作  */
+  593 demo.c       317             /* CH0（割込用）*/
+  594 demo.c       318             TCR0 = 0xA0;                                            /* IMFA0でクリア，分周なし  */
+  595 demo.c       319             TIOR0 = 0x00;                                           /* 一致チェック，端子出力なし  */
+  596 demo.c       320             TCNT0 = 0x0000;                                         /* カウンタクリア  */
+  597 demo.c       321             GRA0 = CNT8KHZ;                                         /* カウント数 for 8kHz */
+  598 demo.c       322             TISRA = 0x10;                                           /* IMFA0一致で割込  */
+  599 demo.c       323             /* CH1（BUZZ用）*/
+  600 demo.c       324             TCR1 = 0xA2;                                            /* IMFA1でクリア，４分周クロック  */
+  601 demo.c       325             TIOR1 = 0x00;                                           /* 一致チェック，端子出力なし  */
+  602 demo.c       326             GRA1 = 0xffff;
+  603 demo.c       327             GRB1 = 0xffff;
+  604 demo.c       328             TSTR |= 0x02;                                           /* ch2カウンタスタート  */
+  605 demo.c       329     
+  606 demo.c       330     }
+  607 demo.c       331     
+  608 demo.c       332     /*
+  609 demo.c       333     ///////////////////////////////////////////////////////////////////////////////
+  610 demo.c       334     //■Init_LCD
+  611 demo.c       335     //・ＬＣＤ初期化
+  612 demo.c       336     //-----------------------------------------------------------------------------
+  613 demo.c       337     //return
+  614 demo.c       338     //-----------------------------------------------------------------------------
+  615 demo.c       339     //param
+  616 demo.c       340     //-----------------------------------------------------------------------------
+  617 demo.c       341     */
+  618 demo.c       342     void Init_LCD ( void )
+  619 demo.c       343     {
+  620 demo.c       344             /* 変数初期化 */
+  621 demo.c       345             memset ( &m_LCDInfo, 0, sizeof ( TYPE_STRUCT_LCD ) );
+  622 demo.c       346             
+  623 demo.c       347             PBDR = 0x00;
+  624 demo.c       348             
+  625 demo.c       349             Wait_LCD ( 20 );
+  626 demo.c       350             
+  627 demo.c       351             PBDR = PBDR & ~0x02;    /* RS Low Set */
+  628 demo.c       352     
+  629 demo.c       353             /* LCD初期化1回目 */
+  630 demo.c       354             PBDR = PBDR | 0x01;                     /* E High Set */
+  631 demo.c       355             PBDR = ( PBDR & 0x0f ) | 0x30;  /*初期化信号送信1回目 */
+  632 demo.c       356             Wait_LCD ( 1 );
+  633 demo.c       357             PBDR = PBDR & ~0x01;    /* E Low Set */
+  634 demo.c       358             Wait_LCD ( 1 );
+  635 demo.c       359             
+  636 demo.c       360             Wait_LCD ( 5 );
+  637 demo.c       361             
+  638 demo.c       362             
+  639 demo.c       363             /* LCD初期化2回目 */
+  640 demo.c       364             PBDR = PBDR | 0x01;     /* E High Set */
+  641 demo.c       365             PBDR = ( PBDR & 0x0f ) | 0x30;  /*初期化信号送信2回目 */
+  642 demo.c       366             Wait_LCD ( 1 );
+  643 demo.c       367             PBDR = PBDR & ~0x01;    /* E Low Set */
+  644 demo.c       368             Wait_LCD ( 1 );
+  645 demo.c       369             
+  646 demo.c       370             
+  647 demo.c       371             /* LCD初期化3回目 */
+  648 demo.c       372             PBDR = PBDR | 0x01;     /* E High Set */
+  649 demo.c       373             PBDR = ( PBDR & 0x0f ) | 0x30;  /*初期化信号送信3回目 */
+  650 demo.c       374             Wait_LCD ( 1 );
+  651 demo.c       375             PBDR = PBDR & ~0x01;    /* E Low Set */
+  652 demo.c       376             Wait_LCD ( 1 );
+  653 demo.c       377             
+  654 demo.c       378             
+  655 demo.c       379             /* LCD初期化4回目 */
+  656 demo.c       380             PBDR = PBDR | 0x01;     /* E High Set */
+  657 demo.c       381             PBDR = ( PBDR & 0x0f ) | 0x20;  /*初期化信号送信4回目 */
+  658 demo.c       382             Wait_LCD ( 1 );
+  659 demo.c       383             PBDR = PBDR & ~0x01;    /* E Low Set */
+  660 demo.c       384             Wait_LCD ( 1 );
+  661 demo.c       385             
+  662 demo.c       386             /* ファンクションセット：４ビットバス、２行、５×７ドット */
+  663 demo.c       387             Write_LCD ( VAL_RS_LOW , 0x28 );
+  664 demo.c       388             
+  665 demo.c       389             /* エントリーモード：カーソルインクリメント、カーソル移動 */
+  666 demo.c       390             Write_LCD ( VAL_RS_LOW , 0x06 );
+  667 demo.c       391     
+  668 demo.c       392             /* カーソル/表示シフト：カーソル右シフト */
+  669 demo.c       393             Write_LCD ( VAL_RS_LOW , 0x10 );
+  670 demo.c       394     
+  671 demo.c       395             /* 表示ON/OFFコントロール：ディスプレイ表示、カーソル表示、ブリンク表示 */
+  672 demo.c       396             Write_LCD ( VAL_RS_LOW , 0x0c );
+  673 demo.c       397     
+  674 demo.c       398             /* 表示クリア */
+  675 demo.c       399             Clear_LCD ();
+  676 demo.c       400             
+  677 demo.c       401             Wait_LCD ( 5 );
+  678 demo.c       402             
+  679 demo.c       403     }
+  680 demo.c       404     
+  681 demo.c       405     /*
+  682 demo.c       406     ///////////////////////////////////////////////////////////////////////////////
+  683 demo.c       407     //■Clear_LCD
+  684 demo.c       408     //　ＬＣＤ制御：表示クリア
+  685 demo.c       409     //-----------------------------------------------------------------------------
+  686 demo.c       410     //return
+  687 demo.c       411     //-----------------------------------------------------------------------------
+  688 demo.c       412     //param
+  689 demo.c       413     //-----------------------------------------------------------------------------
+  690 demo.c       414     */
+  691 demo.c       415     void Clear_LCD ( void )
+  692 demo.c       416     {
+  693 demo.c       417             PBDR = PBDR & ~0x02;    /* RS Low Set */
+  694 demo.c       418             Write_LCD ( VAL_RS_LOW , 0x01 );
+  695 demo.c       419             Wait_LCD ( 2 );
+  696 demo.c       420             Locate_LCD ( 0 , 0 );
+  697 demo.c       421     }
+  698 demo.c       422     
+  699 demo.c       423     
+  700 demo.c       424     /*
+  701 demo.c       425     ///////////////////////////////////////////////////////////////////////////////
+  702 demo.c       426     //■Locate_LCD
+  703 demo.c       427     //　ＬＣＤ制御：カーソル移動
+  704 demo.c       428     //-----------------------------------------------------------------------------
+  705 demo.c       429     //return
+  706 demo.c       430     //-----------------------------------------------------------------------------
+  707 demo.c       431     //param
+  708 demo.c       432     //-----------------------------------------------------------------------------
+  709 demo.c       433     */
+  710 demo.c       434     void Locate_LCD ( const unsigned char X, const unsigned char Y )
+  711 demo.c       435     {
+  712 demo.c       436             unsigned char i;
+  713 demo.c       437             i = Y * 0x40 + X;
+  714 demo.c       438             i = i | 0x80;
+  715 demo.c       439             
+  716 demo.c       440             Write_LCD( VAL_RS_LOW , i );
+  717 demo.c       441             Wait_LCD ( 1 );
+  718 demo.c       442             
+  719 demo.c       443             /* カーソル保存 */
+  720 demo.c       444             m_LCDInfo.CURSOR.BIT.X = X;
+  721 demo.c       445             m_LCDInfo.CURSOR.BIT.Y = Y;
+  722 demo.c       446             
+  723 demo.c       447     }
+  724 demo.c       448     
+  725 demo.c       449     /*
+  726 demo.c       450     ///////////////////////////////////////////////////////////////////////////////
+  727 demo.c       451     //■Print_LCD
+  728 demo.c       452     //　ＬＣＤ制御：文字列表示
+  729 demo.c       453     //-----------------------------------------------------------------------------
+  730 demo.c       454     //return
+  731 demo.c       455     //-----------------------------------------------------------------------------
+  732 demo.c       456     //param
+  733 demo.c       457     //-----------------------------------------------------------------------------
+  734 demo.c       458     */
+  735 demo.c       459     void Print_LCD ( const char *String )
+  736 demo.c       460     {
+  737 demo.c       461             /* 変数宣言 */
+  738 demo.c       462             unsigned char i, j;
+  739 demo.c       463             
+  740 demo.c       464             
+  741 demo.c       465             /* 文字列表示ループ */
+  742 demo.c       466             for ( i = 0; String[ i ] != '\0'; ++i )
+  743 demo.c       467             {
+  744 demo.c       468                     /* 文字描画 */
+  745 demo.c       469                     if (
+  746 demo.c       470                             ( String[ i ] >= 0x20 && String[ i ] <= 0x7f ) ||
+  747 demo.c       471                             ( String[ i ] >= 0xa1 && String[ i ] <= 0xfd )
+  748 demo.c       472                     )
+  749 demo.c       473                     {/* ＬＣＤ文字コードの範囲内の場合 */
+  750 demo.c       474                             /* 文字描画 */
+  751 demo.c       475                             Write_LCD ( VAL_RS_HIGH, String[ i ] );
+  752 demo.c       476                             Wait_LCD ( 1 );
+  753 demo.c       477                             
+  754 demo.c       478                             /* カーソル移動 */
+  755 demo.c       479                             if ( m_LCDInfo.CURSOR.BIT.X == VAL_LCD_ROW  )
+  756 demo.c       480                             {/* 16行をオーバーする場合 */
+  757 demo.c       481                                     m_LCDInfo.CURSOR.BIT.X = 0;
+  758 demo.c       482                                     m_LCDInfo.CURSOR.BIT.Y = ( m_LCDInfo.CURSOR.BIT.Y == 0 ? 1 : 0 );
+  759 demo.c       483                                     Locate_LCD ( m_LCDInfo.CURSOR.BIT.X, m_LCDInfo.CURSOR.BIT.Y );
+  760 demo.c       484                                     for ( j = 0; j < VAL_LCD_ROW; ++j )
+  761 demo.c       485                                             Write_LCD ( VAL_RS_HIGH, ' ' );
+  762 demo.c       486                                     Locate_LCD ( m_LCDInfo.CURSOR.BIT.X, m_LCDInfo.CURSOR.BIT.Y );
+  763 demo.c       487                             }
+  764 demo.c       488                             else
+  765 demo.c       489                             {/* 16行以内の場合 */
+  766 demo.c       490                                     ++m_LCDInfo.CURSOR.BIT.X;
+  767 demo.c       491                                     Locate_LCD ( m_LCDInfo.CURSOR.BIT.X, m_LCDInfo.CURSOR.BIT.Y );
+  768 demo.c       492                             }/* if ( m_LCDInfo.CURSOR.BIT.X + 1 <= 0x0f ) */
+  769 demo.c       493                     }
+  770 demo.c       494                     else if ( String[ i ] == '\n' )
+  771 demo.c       495                     {/* 改行コードの場合 */
+  772 demo.c       496                             m_LCDInfo.CURSOR.BIT.X = 0;
+  773 demo.c       497                             m_LCDInfo.CURSOR.BIT.Y = ( m_LCDInfo.CURSOR.BIT.Y == 0 ? 1 : 0 );
+  774 demo.c       498                             Locate_LCD ( m_LCDInfo.CURSOR.BIT.X, m_LCDInfo.CURSOR.BIT.Y );
+  775 demo.c       499                             for ( j = 0; j < VAL_LCD_ROW; ++j )
+  776 demo.c       500                                             Write_LCD ( VAL_RS_HIGH, ' ' );
+  777 demo.c       501                             Locate_LCD ( m_LCDInfo.CURSOR.BIT.X, m_LCDInfo.CURSOR.BIT.Y );
+  778 demo.c       502                     }
+  779 demo.c       503                     else
+  780 demo.c       504                     {/* ＬＣＤ文字コードの範囲外の場合 */
+  781 demo.c       505                             
+  782 demo.c       506                     }
+  783 demo.c       507             }
+  784 demo.c       508             
+  785 demo.c       509             
+  786 demo.c       510     }
+  787 demo.c       511     
+  788 demo.c       512     /*
+  789 demo.c       513     ///////////////////////////////////////////////////////////////////////////////
+  790 demo.c       514     //■Write_LCD
+  791 demo.c       515     //　ＬＣＤ制御：書き込み
+  792 demo.c       516     //-----------------------------------------------------------------------------
+  793 demo.c       517     //return
+  794 demo.c       518     //-----------------------------------------------------------------------------
+  795 demo.c       519     //param
+  796 demo.c       520     //-----------------------------------------------------------------------------
+  797 demo.c       521     */
+  798 demo.c       522     void Write_LCD (
+  799 demo.c       523             const unsigned char RS_Mode ,
+  800 demo.c       524             const unsigned char Data
+  801 demo.c       525     )
+  802 demo.c       526     {
+  803 demo.c       527             /* 4ビット長の場合 */
+  804 demo.c       528             /* RS Setting */
+  805 demo.c       529             if ( RS_Mode == VAL_RS_LOW )
+  806 demo.c       530             {
+  807 demo.c       531                     PBDR = PBDR & ~0x02;    /* RS Low Set */
+  808 demo.c       532             }
+  809 demo.c       533             else if ( RS_Mode == VAL_RS_HIGH )
+  810 demo.c       534             {
+  811 demo.c       535                     PBDR = PBDR | 0x02 ;    /* RS High Set */
+  812 demo.c       536             }
+  813 demo.c       537             
+  814 demo.c       538             /* 上位4ビット */
+  815 demo.c       539             
+  816 demo.c       540             PBDR = PBDR | 0x01;     /* E High Set */
+  817 demo.c       541             
+  818 demo.c       542             PBDR = ( PBDR & 0x0f ) | ( Data & 0xf0 );       /* 上位4ビット書き込み */
+  819 demo.c       543             Wait_LCD ( 1 );
+  820 demo.c       544             PBDR = PBDR & ~0x01;    /* E Low Set */
+  821 demo.c       545             Wait_LCD ( 1 );
+  822 demo.c       546             
+  823 demo.c       547             /* 下位4ビット */
+  824 demo.c       548             PBDR = PBDR | 0x01;     /* E High Set */
+  825 demo.c       549     
+  826 demo.c       550             PBDR = ( PBDR & 0x0f ) | ( ( Data << 4 ) & 0xf0 );
+  827 demo.c       551             Wait_LCD ( 1 );
+  828 demo.c       552             PBDR = PBDR & ~0x01;    /* E Low Set */
+  829 demo.c       553             Wait_LCD ( 1 );
+  830 demo.c       554             
+  831 demo.c       555     }
+  832 demo.c       556     
+  833 demo.c       557     /*
+  834 demo.c       558     ///////////////////////////////////////////////////////////////////////////////
+  835 demo.c       559     //■Wait_LCD
+  836 demo.c       560     //　ＬＣＤ待機
+  837 demo.c       561     //-----------------------------------------------------------------------------
+  838 demo.c       562     //return
+  839 demo.c       563     //-----------------------------------------------------------------------------
+  840 demo.c       564     //param
+  841 demo.c       565     //-----------------------------------------------------------------------------
+  842 demo.c       566     */
+  843 demo.c       567     void Wait_LCD ( unsigned long Interval )
+  844 demo.c       568     {
+  845 demo.c       569             volatile unsigned long i;
+  846 demo.c       570             for ( i = 0; i < Interval * 100; ++i );
+  847 demo.c       571     }
+  848 demo.c       572     
+  849 demo.c       573     /*
+  850 demo.c       574     ///////////////////////////////////////////////////////////////////////////////
+  851 demo.c       575     //■InitRTL8019AS
+  852 demo.c       576     //　ネットワークコントローラ制御：初期化
+  853 demo.c       577     //-----------------------------------------------------------------------------
+  854 demo.c       578     //return
+  855 demo.c       579     //-----------------------------------------------------------------------------
+  856 demo.c       580     //param
+  857 demo.c       581     //-----------------------------------------------------------------------------
+  858 demo.c       582     */
+  859 demo.c       583     void InitRTL8019AS(void){
+  860 demo.c       584     
+  861 demo.c       585             unsigned char   i, status;
+  862 demo.c       586     
+  863 demo.c       587             PADR= PADR | 0x80;                                              /* ハードリセット */
+  864 demo.c       588             Wait_LCD(1000);                                                 /* リセット待ち（LCDループ流用） */
+  865 demo.c       589             PADR= (PADR & 0x7f);                                            /* ハードリセット */
+  866 demo.c       590             putbus(ResetPort,0xff);                                         /* リセット */
+  867 demo.c       591             Wait_LCD(1000);                                                 /* リセット待ち（LCDループ流用） */
+  868 demo.c       592     
+  869 demo.c       593             putbus(Command_R,0x21);                                         /* ページ0，remoteDMA停止，動作OFF */
+  870 demo.c       594             putbus(DC_R,0x4a);                                              /* bos:1  big endan */
+  871 demo.c       595             putbus(RBC_R1,0);                                               /* counter H byte=0 */
+  872 demo.c       596             putbus(RBC_R0,0);                                               /* counter L byte=0 */
+  873 demo.c       597             putbus(IM_R,0);                                                 /* mask all IRQ */
+  874 demo.c       598             putbus(IS_R,0xff);                                              /* set to clear irq */
+  875 demo.c       599             putbus(RC_R,0x20);                                              /* rcr.MON=1 */
+  876 demo.c       600             putbus(TC_R,0x02);                                              /* tcr.LB0=1 */
+  877 demo.c       601             putbus(TPS_R,0x40);                                             /* area 40-45 */
+  878 demo.c       602             putbus(PSTART_R,PSTART);                                        /* area 46-5f */
+  879 demo.c       603             putbus(PSTOP_R,PSTOP);                                          /* stop page 0x60 */
+  880 demo.c       604             putbus(BNRY_R,PSTART);                                          /* boundry=pstart */
+  881 demo.c       605             putbus(Command_R,0x61);                                         /* rd2,stp=1, 1page */
+  882 demo.c       606             putbus(CURR_R,PSTART+1);                                        /* current=boundry+1 */
+  883 demo.c       607             /* 自身のMACの設定（EEPROMから読み出してレジスタに設定）*/
+  884 demo.c       608             putbus(Command_R,0x21);                                         /* ページ0，remoteDMA停止，動作OFF */
+  885 demo.c       609             putbus(RSA_R0,0);                                               /* スタートアドレスの設定 */
+  886 demo.c       610             putbus(RSA_R1,0);
+  887 demo.c       611             putbus(RBC_R0,12);                                              /* 転送バイト数の設定 */
+  888 demo.c       612             putbus(RBC_R1,0);
+  889 demo.c       613             putbus(Command_R,0x0a);                                         /* ページ0，remoteDMA読み出し，動作ON */
+  890 demo.c       614             for(i=0; i<6; i+=2){
+  891 demo.c       615                     myMacAddress[i+1] = getbus(DataPort);
+  892 demo.c       616                     status= getbus(DataPort);                               /* Dummy Read*/
+  893 demo.c       617                     myMacAddress[i] = getbus(DataPort);                     /* エンディアン変換追加 */
+  894 demo.c       618                     status= getbus(DataPort);
+  895 demo.c       619             }
+  896 demo.c       620             do{
+  897 demo.c       621                     status = getbus(IS_R);
+  898 demo.c       622             }       while(!(status & 0x40));                                /* remoteDMA停止まで待つ */
+  899 demo.c       623             putbus(Command_R,0x61);
+  900 demo.c       624             putbus(PA_R0,myMacAddress[0]);                                  /* MACアドレスの設定 */
+  901 demo.c       625             putbus(PA_R1,myMacAddress[1]);
+  902 demo.c       626             putbus(PA_R2,myMacAddress[2]);
+  903 demo.c       627             putbus(PA_R3,myMacAddress[3]);
+  904 demo.c       628             putbus(PA_R4,myMacAddress[4]);
+  905 demo.c       629             putbus(PA_R5,myMacAddress[5]);
+  906 demo.c       630     
+  907 demo.c       631             /* マルチキャストアドレスの設定 */
+  908 demo.c       632             putbus(MA_R0,0);
+  909 demo.c       633             putbus(MA_R1,0);
+  910 demo.c       634             putbus(MA_R2,0);
+  911 demo.c       635             putbus(MA_R3,0);
+  912 demo.c       636             putbus(MA_R4,0);
+  913 demo.c       637             putbus(MA_R5,0);
+  914 demo.c       638             putbus(MA_R6,0);
+  915 demo.c       639             putbus(MA_R7,0);
+  916 demo.c       640     
+  917 demo.c       641             /* 通常動作へ移行 */
+  918 demo.c       642             putbus(Command_R,0x21);                                         /* rd2,stp=1, 0page */
+  919 demo.c       643             putbus(RC_R,0x04);                                              /* rcr.ab=1 */
+  920 demo.c       644             putbus(TC_R,0);                                                 /* clear tcr */
+  921 demo.c       645             putbus(IM_R,0);                                                 /* disable interrupt */
+  922 demo.c       646             putbus(Command_R,0x22);
+  923 demo.c       647     }
+  924 demo.c       648     
+  925 demo.c       649     /*
+  926 demo.c       650     ///////////////////////////////////////////////////////////////////////////////
+  927 demo.c       651     //■getbus
+  928 demo.c       652     //　ネットワークコントローラ制御：初期化
+  929 demo.c       653     //-----------------------------------------------------------------------------
+  930 demo.c       654     //return databus
+  931 demo.c       655     //-----------------------------------------------------------------------------
+  932 demo.c       656     //param
+  933 demo.c       657     //-----------------------------------------------------------------------------
+  934 demo.c       658     */
+  935 demo.c       659     unsigned char getbus(unsigned char addr){
+  936 demo.c       660     
+  937 demo.c       661             unsigned char buf;
+  938 demo.c       662             int i;
+  939 demo.c       663     
+  940 demo.c       664             if ((MDCR & 0x2) == 0){
+  941 demo.c       665                     pNIC= RTL8019;
+  942 demo.c       666                     buf = pNIC[addr];
+  943 demo.c       667                     return(buf);
+  944 demo.c       668             }else{
+  945 demo.c       669                     P1DR = addr;                                            /* アドレス出力 */
+  946 demo.c       670                     BUS_IN();                                               /* バスを入力に */
+  947 demo.c       671                     RD_L();
+  948 demo.c       672             
+  949 demo.c       673                     buf =  databus(0,buf);
+  950 demo.c       674                     RD_H();
+  951 demo.c       675                     return(buf);
+  952 demo.c       676             }
+  953 demo.c       677     }
+  954 demo.c       678     
+  955 demo.c       679     /*
+  956 demo.c       680     ///////////////////////////////////////////////////////////////////////////////
+  957 demo.c       681     //■InitRTL8019AS
+  958 demo.c       682     //　ネットワークコントローラ制御：初期化
+  959 demo.c       683     //-----------------------------------------------------------------------------
+  960 demo.c       684     //return
+  961 demo.c       685     //-----------------------------------------------------------------------------
+  962 demo.c       686     //param
+  963 demo.c       687     //-----------------------------------------------------------------------------
+  964 demo.c       688     */
+  965 demo.c       689     void putbus(unsigned char addr,unsigned char data){
+  966 demo.c       690     
+  967 demo.c       691             int i;
+  968 demo.c       692     
+  969 demo.c       693             if ((MDCR & 0x2) == 0){
+  970 demo.c       694                     pNIC= RTL8019;
+  971 demo.c       695                     pNIC[addr]= data;
+  972 demo.c       696             }else{
+  973 demo.c       697                     P1DR = addr;                                            /* アドレス出力 */
+  974 demo.c       698                     WE_L();                                                 /* イネーブル */
+  975 demo.c       699                     BUS_OUT();                                              /* バスを出力に */
+  976 demo.c       700             
+  977 demo.c       701                     data=databus(10,data);                                  /* データ出力 */
+  978 demo.c       702                     WE_H();                                                 /* ディセーブル */
+  979 demo.c       703                     BUS_IN();                                               /* バスを入力に */
+  980 demo.c       704             }
+  981 demo.c       705     }
+  982 demo.c       706     
+  983 demo.c       707     /*
+  984 demo.c       708     ///////////////////////////////////////////////////////////////////////////////
+  985 demo.c       709     //■InitRTL8019AS
+  986 demo.c       710     //　ネットワークコントローラ制御：初期化
+  987 demo.c       711     //-----------------------------------------------------------------------------
+  988 demo.c       712     //return
+  989 demo.c       713     //-----------------------------------------------------------------------------
+  990 demo.c       714     //param
+  991 demo.c       715     //-----------------------------------------------------------------------------
+  992 demo.c       716     */
+  993 demo.c       717     unsigned char databus(int b,unsigned char dataa){
+  994 demo.c       718     
+  995 demo.c       719             if (b > 1) {
+  996 demo.c       720                     P3DR=dataa;
+  997 demo.c       721             }else{
+  998 demo.c       722                     dataa=P3DR;
+  999 demo.c       723             }
+ 1000 demo.c       724             return(dataa);
+ 1001 demo.c       725     }
+ 1002 demo.c       726     
+ 1003 demo.c       727     char keyin(void){
+ 1004 demo.c       728     
+ 1005 demo.c       729     char i,data;
+ 1006 demo.c       730             for(i=0;i<3;i++){
+ 1007 demo.c       731                     P4DR = ~(0x10 << i);
+ 1008 demo.c       732                     data = (~P4DR & 0xf);
+ 1009 demo.c       733                     if(data != 0){
+ 1010 demo.c       734                             data += (i<<4);
+ 1011 demo.c       735                             break;
+ 1012 demo.c       736                     }
+ 1013 demo.c       737             }
+ 1014 demo.c       738             P4DR = 0xf0;
+ 1015 demo.c       739             return(data);
+ 1016 demo.c       740     
+ 1017 demo.c       741     }
+ 1018 demo.c       742     
+ 1019 demo.c       743     /***********************************************************
+ 1020 demo.c       744     **  割込プログラム（8kHz周期で動作します）                **
+ 1021 demo.c       745     ***********************************************************/  
+ 1022 demo.c       746     void Proc8kHz(void){
+ 1023 demo.c       747             TISRA &= 0xfe;                                                  /* タイマ割込フラグのリセット */
+ 1024 demo.c       748             DADR0=ADDRAH;
+ 1025 demo.c       749             ADCSR = 0x20;
+ 1026 demo.c       750     
+ 1027 demo.c       751     }
+ 1028 demo.c       752     /* Ethernetコントローラから受信パケットを読み出す */
+ 1029 demo.c       753     char ReceiveEtherData(void){
+ 1030 demo.c       754     
+ 1031 demo.c       755             unsigned char   boundry, current, addH, nextP, nextEP, countL, countH, status;
+ 1032 demo.c       756             volatile unsigned short i;
+ 1033 demo.c       757             unsigned short  count;
+ 1034 demo.c       758             char asciicode[]="0123456789ABCDEF ";
+ 1035 demo.c       759             char Code[] = "     ";
+ 1036 demo.c       760             char Code2[] = "   ";
+ 1037 demo.c       761     
+ 1038 demo.c       762             /* 受信パケットの有無をチェックする */
+ 1039 demo.c       763             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1040 demo.c       764             boundry = getbus(BNRY_R);
+ 1041 demo.c       765             putbus(Command_R,0x62);                                         /* ページ1，remoteDMA停止，動作ON */
+ 1042 demo.c       766             current = getbus(CURR_R);
+ 1043 demo.c       767             if(current < boundry){
+ 1044 demo.c       768                     current += PSTOP - PSTART;
+ 1045 demo.c       769             }
+ 1046 demo.c       770             if(current == boundry+1){
+ 1047 demo.c       771                     return 0;                                               /* パケットなしなら，終わり */
+ 1048 demo.c       772             }
+ 1049 demo.c       773             boundry++;                                                      /* 読み出しページをaddHに設定 */
+ 1050 demo.c       774             if(boundry==PSTOP){
+ 1051 demo.c       775                     addH= PSTART;
+ 1052 demo.c       776             }
+ 1053 demo.c       777             else{
+ 1054 demo.c       778                     addH = boundry;
+ 1055 demo.c       779             }
+ 1056 demo.c       780             /* 最初の4byteから転送バイト数を読み出す */
+ 1057 demo.c       781             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1058 demo.c       782             putbus(RSA_R0,0);                                               /* スタートアドレス設定 */
+ 1059 demo.c       783             putbus(RSA_R1,addH);
+ 1060 demo.c       784             putbus(RBC_R0,4);                                               /* 転送バイト数設定 */
+ 1061 demo.c       785             putbus(RBC_R1,0);
+ 1062 demo.c       786             putbus(Command_R,0x0a);                                         /* ページ0，remoteDMA読出，動作ON */
+ 1063 demo.c       787             status = getbus(DataPort);
+ 1064 demo.c       788             for(i=0; i<2; i++);                                             /* waiting for rDMA internal process */
+ 1065 demo.c       789             nextP = getbus(DataPort);
+ 1066 demo.c       790             for(i=0; i<2; i++);                                             /* waiting for rDMA internal process */
+ 1067 demo.c       791             countL = getbus(DataPort);
+ 1068 demo.c       792             for(i=0; i<2; i++);                                             /* waiting for rDMA internal process */
+ 1069 demo.c       793             countH = getbus(DataPort);
+ 1070 demo.c       794             do{
+ 1071 demo.c       795                     status = getbus(IS_R);
+ 1072 demo.c       796             }       while(!(status & 0x40));                                /* remoteDMA停止まで待つ */
+ 1073 demo.c       797             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1074 demo.c       798             /* 受信パケット情報のチェック */
+ 1075 demo.c       799             nextEP= addH + countH + 1;                                      /* 次のページ位置を計算 */
+ 1076 demo.c       800             if(nextEP>=PSTOP){
+ 1077 demo.c       801             }
+ 1078 demo.c       802             if(nextP != nextEP){                                            /* 読み出したページと計算値が合っているか */
+ 1079 demo.c       803                     putbus(BNRY_R,addH);
+ 1080 demo.c       804                     nextEP= nextEP - PSTOP + PSTART;
+ 1081 demo.c       805                     return 0;                                               /* 不正なパケットはページを進めて終わり */
+ 1082 demo.c       806             }
+ 1083 demo.c       807             /* 取得したバイト数で改めて受信パケットを読み出す */
+ 1084 demo.c       808             putbus(RSA_R0,0);
+ 1085 demo.c       809             putbus(RSA_R1,addH);
+ 1086 demo.c       810             putbus(RBC_R0,countL);
+ 1087 demo.c       811             putbus(RBC_R1,countH);
+ 1088 demo.c       812             count = (unsigned short)countH*256+(unsigned short)countL;
+ 1089 demo.c       813             putbus(Command_R,0x0a);                                         /* ページ0，remoteDMA読出，動作ON */
+ 1090 demo.c       814             for(i=0; i<512; i++)    Buffer[i]=0;
+ 1091 demo.c       815             for(i=0; i<count; i++){
+ 1092 demo.c       816                     if(i<4){
+ 1093 demo.c       817                             Buffer[0]= getbus(DataPort);                    /* 空読み */
+ 1094 demo.c       818                     }
+ 1095 demo.c       819                     else if(i>512){
+ 1096 demo.c       820                             Buffer[511]= getbus(DataPort);                  /* 大きすぎる部分は空読み */
+ 1097 demo.c       821                     }else{
+ 1098 demo.c       822                             Buffer[i-4]= getbus(DataPort);
+ 1099 demo.c       823                     }
+ 1100 demo.c       824             }
+ 1101 demo.c       825             do{
+ 1102 demo.c       826                     status = getbus(IS_R);
+ 1103 demo.c       827             }       while(!(status & 0x40));                                /* remoteDMA停止まで待つ */
+ 1104 demo.c       828             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1105 demo.c       829             boundry= addH + countH;
+ 1106 demo.c       830             if(boundry>=PSTOP){                                             /* 次のパケット読み出し位置設定 */
+ 1107 demo.c       831                     putbus(BNRY_R,boundry - PSTOP + PSTART);
+ 1108 demo.c       832             }
+ 1109 demo.c       833             else{
+ 1110 demo.c       834                     putbus(BNRY_R,boundry);
+ 1111 demo.c       835             }
+ 1112 demo.c       836             /* パケットの種別チェック */
+ 1113 demo.c       837                     Locate_LCD (12,0);
+ 1114 demo.c       838                     Print_LCD ( " " );
+ 1115 demo.c       839             if((unsigned short)(((PacketICMP *)Buffer)->etherType)==(unsigned short)0x0806){                                /* ARPの場合 */
+ 1116 demo.c       840                     if(CompareIP((((PacketARP *)Buffer)->destIP), myIpAddress)==0){ /* 宛先チェック */
+ 1117 demo.c       841                             if(((PacketARP *)Buffer)->operation==0x0001){           /* リクエストの場合 */
+ 1118 demo.c       842                                     SendArpReply(Buffer);                   /* レスポンスの送信 */
+ 1119 demo.c       843                                     return 0;
+ 1120 demo.c       844                             }
+ 1121 demo.c       845                     }
+ 1122 demo.c       846                     else{                                                   /* その他のARPパケットは無視 */
+ 1123 demo.c       847                             return 0;
+ 1124 demo.c       848                     }
+ 1125 demo.c       849             }else if((unsigned short)(((PacketICMP *)Buffer)->etherType)==(unsigned short)0x0800){                  /* IPパケット受信の時 */
+ 1126 demo.c       850                     if(CompareIP((((PacketICMP *)Buffer)->destIP), myIpAddress) == 0){      /* 宛先チェック */
+ 1127 demo.c       851                             switch(((PacketICMP *)Buffer)->protocol){                       /* プロトコル識別 */
+ 1128 demo.c       852                                     case 0x01:              /* ICMP */
+ 1129 demo.c       853                                             Locate_LCD (13,0);
+ 1130 demo.c       854                                             Print_LCD ( "d" );
+ 1131 demo.c       855                                             if(((PacketICMP *)Buffer)->type==0x08){ /* 要求が有る時だけ */
+ 1132 demo.c       856                                                     SendPingMessage(Buffer);
+ 1133 demo.c       857                                                     return 0;
+ 1134 demo.c       858                                             }
+ 1135 demo.c       859                                             break;
+ 1136 demo.c       860                                     case 0x06:              /* TCP */
+ 1137 demo.c       861                                             break;
+ 1138 demo.c       862                                     case 0x11:              /* UDP */
+ 1139 demo.c       863                                             break;
+ 1140 demo.c       864                                     default:
+ 1141 demo.c       865                                             break;
+ 1142 demo.c       866                             }
+ 1143 demo.c       867     
+ 1144 demo.c       868     
+ 1145 demo.c       869                     }
+ 1146 demo.c       870     
+ 1147 demo.c       871             }
+ 1148 demo.c       872             return 0;
+ 1149 demo.c       873     }
+ 1150 demo.c       874     
+ 1151 demo.c       875     
+ 1152 demo.c       876     /* IPアドレスの一致チェック */
+ 1153 demo.c       877     unsigned char CompareIP(unsigned char *pIP1, unsigned char *pIP2){
+ 1154 demo.c       878     
+ 1155 demo.c       879             unsigned char   i;
+ 1156 demo.c       880             
+ 1157 demo.c       881             for(i=0; i<4; i++){
+ 1158 demo.c       882                     if(pIP1[i] != pIP2[i]){
+ 1159 demo.c       883                             return (1);
+ 1160 demo.c       884                     }
+ 1161 demo.c       885             }
+ 1162 demo.c       886             return(0);
+ 1163 demo.c       887     }
+ 1164 demo.c       888     
+ 1165 demo.c       889     /* IPアドレスの一致チェック */
+ 1166 demo.c       890     unsigned char CIP(unsigned char *pIP1, unsigned char *pIP2){
+ 1167 demo.c       891     
+ 1168 demo.c       892             unsigned char   i;
+ 1169 demo.c       893             char asciicode[]="0123456789ABCDEF ";
+ 1170 demo.c       894             char Code[] = "  .";
+ 1171 demo.c       895             
+ 1172 demo.c       896             Locate_LCD(0,0);
+ 1173 demo.c       897             for(i=0; i<4; i++){
+ 1174 demo.c       898                     Code[0] = asciicode[((pIP1[i]>>4) & 0xf)];
+ 1175 demo.c       899                     Code[1] = asciicode[((pIP1[i]   ) & 0xf)];
+ 1176 demo.c       900                     Print_LCD ( Code );
+ 1177 demo.c       901             }
+ 1178 demo.c       902             return(0);
+ 1179 demo.c       903     }
+ 1180 demo.c       904     
+ 1181 demo.c       905     
+ 1182 demo.c       906     
+ 1183 demo.c       907     
+ 1184 demo.c       908     /* MACアドレスの問い合わせに答える */
+ 1185 demo.c       909     void SendArpReply(unsigned char *buff){
+ 1186 demo.c       910     
+ 1187 demo.c       911             unsigned short  i;
+ 1188 demo.c       912             
+ 1189 demo.c       913             for(i=0; i<6; i++){                                             /* MACアドレスの設定 */
+ 1190 demo.c       914                     ((PacketARP *)buff)->destMAC[i]= ((PacketARP *)buff)->srcMAC[i];
+ 1191 demo.c       915                     ((PacketARP *)buff)->destMACarp[i]= ((PacketARP *)buff)->srcMAC[i];
+ 1192 demo.c       916                     ((PacketARP *)buff)->srcMAC[i]= myMacAddress[i];
+ 1193 demo.c       917                     ((PacketARP *)buff)->srcMACarp[i]= myMacAddress[i];
+ 1194 demo.c       918             }
+ 1195 demo.c       919             for(i=0; i<4; i++){                                             /* IPアドレスの設定 */
+ 1196 demo.c       920                     ((PacketARP *)buff)->destIP[i]= ((PacketARP *)buff)->srcIP[i];
+ 1197 demo.c       921                     ((PacketARP *)buff)->srcIP[i]= myIpAddress[i];
+ 1198 demo.c       922             }
+ 1199 demo.c       923             ((PacketARP *)buff)->operation= 0x0002;                         /* ARP応答 */
+ 1200 demo.c       924             SendEtherData(buff, 60);
+ 1201 demo.c       925     }
+ 1202 demo.c       926     
+ 1203 demo.c       927     
+ 1204 demo.c       928     void SendPingMessage(unsigned char *buff){
+ 1205 demo.c       929     
+ 1206 demo.c       930             unsigned char   i;
+ 1207 demo.c       931             unsigned short  l;
+ 1208 demo.c       932             unsigned long   sum;
+ 1209 demo.c       933             
+ 1210 demo.c       934             
+ 1211 demo.c       935             ((PacketICMP *)buff)->type = 0x00;                              /* フィールドタイプ */
+ 1212 demo.c       936             ((PacketICMP *)buff)->code = 0x00;                              /* コード。要求、応答時は00hとなる */
+ 1213 demo.c       937             ((PacketICMP *)buff)->checksum = 0x0000;                        /* チェックサム(後で計算) */
+ 1214 demo.c       938             for(i=0; i<6; i++){                                             /* MACアドレスの設定 */
+ 1215 demo.c       939                     ((PacketICMP *)buff)->destMAC[i]= ((PacketICMP *)buff)->srcMAC[i];
+ 1216 demo.c       940                     ((PacketICMP *)buff)->srcMAC[i]= myMacAddress[i];
+ 1217 demo.c       941             }
+ 1218 demo.c       942             for(i=0; i<4; i++){                                             /* IPアドレスの設定 */
+ 1219 demo.c       943                     ((PacketICMP *)buff)->destIP[i]= ((PacketICMP *)buff)->srcIP[i];
+ 1220 demo.c       944                     ((PacketICMP *)buff)->srcIP[i]= myIpAddress[i];
+ 1221 demo.c       945             }
+ 1222 demo.c       946             ((PacketICMP *)buff)->identification= TCNT2;
+ 1223 demo.c       947             ((PacketICMP *)buff)->checksumIP= 0;
+ 1224 demo.c       948             ((PacketICMP *)buff)->checksumIP= GetChecksumIP(buff);          /* IPチェックサムの計算 */
+ 1225 demo.c       949     
+ 1226 demo.c       950     
+ 1227 demo.c       951             sum=0;
+ 1228 demo.c       952             for(l=34;(l+1)<((((PacketICMP *)buff)->lengthIP)+14);l+=2){
+ 1229 demo.c       953                     sum += (((unsigned short)buff[l] << 8) + (unsigned short)buff[l+1]);
+ 1230 demo.c       954             }
+ 1231 demo.c       955             if( (l+1) == ((((PacketICMP *)buff)->lengthIP+14)) ){
+ 1232 demo.c       956                     sum += ((unsigned short)buff[l] << 8);
+ 1233 demo.c       957             }
+ 1234 demo.c       958             sum = (sum & 0xffff) + (sum >> 16);
+ 1235 demo.c       959             sum = (sum & 0xffff) + (sum >> 16);
+ 1236 demo.c       960     
+ 1237 demo.c       961             ((PacketICMP *)buff)->checksum = (unsigned short)~sum;
+ 1238 demo.c       962             SendEtherData(buff, (((PacketICMP *)buff)->lengthIP+14));
+ 1239 demo.c       963     
+ 1240 demo.c       964     }
+ 1241 demo.c       965     
+ 1242 demo.c       966     /* Ethernetコントローラへパケットを書き込んで送信する */
+ 1243 demo.c       967     void SendEtherData(unsigned char *buff, unsigned short count){
+ 1244 demo.c       968     
+ 1245 demo.c       969             volatile unsigned short i;
+ 1246 demo.c       970             unsigned char   status, countH, countL;
+ 1247 demo.c       971     
+ 1248 demo.c       972             countH = (unsigned char)(count >> 8);                           /* 転送データ数をバイトに分解 */
+ 1249 demo.c       973             countL = (unsigned char)(count & 0x00ff);
+ 1250 demo.c       974             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1251 demo.c       975             do{
+ 1252 demo.c       976                     status = getbus(IS_R);
+ 1253 demo.c       977             }       while(!(status & 0x40));                                /* remoteDMA停止まで待つ */
+ 1254 demo.c       978             /* リモートDMAの設定 */
+ 1255 demo.c       979             putbus(RSA_R0,0x0);                                             /* スタートアドレス設定 */
+ 1256 demo.c       980             putbus(RSA_R1,0x40);
+ 1257 demo.c       981             putbus(RBC_R0,countL);                                          /* 転送バイト数設定 */
+ 1258 demo.c       982             putbus(RBC_R1,countH);
+ 1259 demo.c       983             putbus(Command_R,0x12);                                         /* ページ0，remoteDMA書込，動作ON */
+ 1260 demo.c       984             for(i= 0; i<(unsigned short)count; i++){
+ 1261 demo.c       985                     putbus(DataPort,buff[i]);
+ 1262 demo.c       986             }
+ 1263 demo.c       987             do{
+ 1264 demo.c       988                     status = getbus(IS_R);
+ 1265 demo.c       989             }       while(!(status & 0x40));                                /* remoteDMA完了まで待つ */
+ 1266 demo.c       990             putbus(Command_R,0x22);                                         /* ページ0，remoteDMA停止，動作ON */
+ 1267 demo.c       991             putbus(TPS_R,0x40);                                             /* 送信ページ設定 */
+ 1268 demo.c       992             putbus(TBC_R0,countL);                                          /* 送信バイト数設定 */
+ 1269 demo.c       993             putbus(TBC_R1,countH);
+ 1270 demo.c       994             putbus(Command_R,0x26);                                         /* ページ0，remoteDMA停止，パケット送信，動作ON */
+ 1271 demo.c       995     }
+ 1272 demo.c       996     
+ 1273 demo.c       997     
+ 1274 demo.c       998     /* IPヘッダのチェックサム計算 */
+ 1275 demo.c       999     unsigned short GetChecksumIP(unsigned char *buff){
+ 1276 demo.c      1000     
+ 1277 demo.c      1001             unsigned long   sum;
+ 1278 demo.c      1002             unsigned char   i;
+ 1279 demo.c      1003     
+ 1280 demo.c      1004             sum= 0;
+ 1281 demo.c      1005             for(i=14; i<34; i+=2){
+ 1282 demo.c      1006                     sum += (((unsigned short)buff[i] << 8) + (unsigned short)buff[i+1]);
+ 1283 demo.c      1007                     sum = (sum & 0x0000ffff)+((sum & 0xffff0000)>>16);
+ 1284 demo.c      1008             }
+ 1285 demo.c      1009             if ((sum & 0xffff0000) != 0)    sum = (sum & 0x0000ffff)+((sum & 0xffff0000)>>16);
+ 1286 demo.c      1010             return ((unsigned short)~sum);
+ 1287 demo.c      1011     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)16-Jun-2008  10:55:07  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00001088 Byte(s)
+CONSTANT SECTION(C):                                0x00000074 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000211 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00001088 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000074 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000211 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x0000130D Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        7 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       26 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        152 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

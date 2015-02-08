@@ -1,0 +1,8 @@
+input startup
+input ex3_5
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output ex3_5.abs
+print ex3_5.map
+exit

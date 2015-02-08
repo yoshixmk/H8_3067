@@ -1,0 +1,85 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  15:44:02  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: sample.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 sample.c       1     #include <sci.h>
+  138 sample.c       2     #include <reg3067.h>
+  310 sample.c       3     #include <machine.h>
+  417 sample.c       4     #pragma interrupt(int_ms_timer)
+  418 sample.c       5     
+  419 sample.c       6     void ms_timer(unsigned short ms)
+  420 sample.c       7     {
+  421 sample.c       8       int i;
+  422 sample.c       9       TCR2=0xA3;
+  423 sample.c      10       GRA2=2499;
+  424 sample.c      11       TSTR=0xFC;
+  425 sample.c      12       for(i = 0; i < ms; i++ ){
+  426 sample.c      13         while((TISRA & 0x04) != 0x04);
+  427 sample.c      14         TISRA&=0xFB;
+  428 sample.c      15       }
+  429 sample.c      16       TSTR&=0xFB;
+  430 sample.c      17     }
+  431 sample.c      18     
+  432 sample.c      19     void int_ms_timer(void)
+  433 sample.c      20     {
+  434 sample.c      21       static int i;
+  435 sample.c      22       if(i>500){
+  436 sample.c      23         i=0;
+  437 sample.c      24         if(PADR == 0xFB)
+  438 sample.c      25           PADR = 0xF7;
+  439 sample.c      26         else 
+  440 sample.c      27           PADR = 0xFB;
+  441 sample.c      28       }
+  442 sample.c      29       i++;
+  443 sample.c      30       TISRA&=0xFB;
+  444 sample.c      31     }
+  445 sample.c      32     
+  446 sample.c      33     void main(void)
+  447 sample.c      34     {
+  448 sample.c      35       P5DDR = 0xF0;
+  449 sample.c      36       P5PCR = 0xFF;
+  450 sample.c      37       PADDR = 0xFF;
+  451 sample.c      38       PADR = 0xFF;
+  452 sample.c      39       TISRA |= 0x40;
+  453 sample.c      40       TCR2=0xA3;
+  454 sample.c      41       GRA2=2499;
+  455 sample.c      42       PADR = 0xFB;
+  456 sample.c      43       set_imask_ccr(0);
+  457 sample.c      44       TSTR=0xFC;
+  458 sample.c      45       while(1)
+  459 sample.c      46       {
+  460 sample.c      47         
+  461 sample.c      48       }
+  462 sample.c      49     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  15:44:02  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x0000014C Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000002 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x0000014C Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000002 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x0000014E Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        9 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         29 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

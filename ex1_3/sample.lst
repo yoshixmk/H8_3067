@@ -1,0 +1,142 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  16:44:54  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: sample.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 sample.c       1     #include <sci.h>
+  138 sample.c       2     #include <reg3067.h>
+  310 sample.c       3     #include <machine.h>
+  417 sample.c       4     #pragma interrupt(int_ms_timer)
+  418 sample.c       5     
+  419 sample.c       6     int i;
+  420 sample.c       7     void ms_timer(unsigned short ms)
+  421 sample.c       8     {
+  422 sample.c       9       int i;
+  423 sample.c      10       TCR2=0xA3;
+  424 sample.c      11       GRA2=2499;
+  425 sample.c      12       TSTR=0xFC;
+  426 sample.c      13       for(i = 0; i < ms; i++ ){
+  427 sample.c      14         while((TISRA & 0x04) != 0x04);
+  428 sample.c      15         TISRA&=0xFB;
+  429 sample.c      16       }
+  430 sample.c      17       TSTR&=0xFB;
+  431 sample.c      18     }
+  432 sample.c      19     
+  433 sample.c      20     void int_ms_timer(void)
+  434 sample.c      21     {
+  435 sample.c      22       if(i>500){
+  436 sample.c      23         i=0;
+  437 sample.c      24         if(PADR == 0xFB)
+  438 sample.c      25           PADR = 0xF7;
+  439 sample.c      26         else 
+  440 sample.c      27           PADR = 0xFB;
+  441 sample.c      28       }
+  442 sample.c      29       i++;
+  443 sample.c      30       TISRA&=0xFB;
+  444 sample.c      31     }
+  445 sample.c      32     
+  446 sample.c      33     char matrix_key_read(void)
+  447 sample.c      34     {
+  448 sample.c      35       char key;
+  449 sample.c      36       unsigned char column, row;
+  450 sample.c      37       key = 0;
+  451 sample.c      38       column = 0x10;
+  452 sample.c      39       while(column<=0x40)
+  453 sample.c      40       {
+  454 sample.c      41         P4DR=~column;
+  455 sample.c      42         row=(~P4DR)&0x0F;
+  456 sample.c      43         if(row!=0)
+  457 sample.c      44         {
+  458 sample.c      45           switch(column | row)
+  459 sample.c      46           {
+  460 sample.c      47               case 0x11: key='1'; break;
+  461 sample.c      48               case 0x12: key='2'; break;
+  462 sample.c      49               case 0x14: key='3'; break;
+  463 sample.c      50               case 0x18: key='4'; break;
+  464 sample.c      51               case 0x21: key='5'; break;
+  465 sample.c      52               case 0x22: key='6'; break;
+  466 sample.c      53               case 0x24: key='7'; break;
+  467 sample.c      54               case 0x28: key='8'; break;
+  468 sample.c      55               case 0x41: key='9'; break;
+  469 sample.c      56               case 0x42: key='*'; break;
+  470 sample.c      57               case 0x44: key='0'; break;
+  471 sample.c      58               case 0x48: key='#'; break;
+  472 sample.c      59               default: key=0; break;
+  473 sample.c      60           }
+  474 sample.c      61         }
+  475 sample.c      62         column = column<<1;
+  476 sample.c      63       }
+  477 sample.c      64       return key;
+  478 sample.c      65     }
+  479 sample.c      66     
+  480 sample.c      67     void main(void)
+  481 sample.c      68     {
+  482 sample.c      69       int state, pre_state;
+  483 sample.c      70       P4DDR = 0xF0;
+  484 sample.c      71       P5DDR = 0xF0;
+  485 sample.c      72       P5PCR = 0xFF;
+  486 sample.c      73       PADDR = 0xFF;
+  487 sample.c      74       PADR = 0xFF;
+  488 sample.c      75       TISRA |= 0x40;
+  489 sample.c      76       TCR2=0xA3;
+  490 sample.c      77       GRA2=2499;
+  491 sample.c      78       PADR = 0xFB;
+  492 sample.c      79       set_imask_ccr(0);
+  493 sample.c      80       TSTR=0xFC;
+  494 sample.c      81       while(1)
+  495 sample.c      82       {
+  496 sample.c      83         switch(state=matrix_key_read())
+  497 sample.c      84         {
+  498 sample.c      85               case '1': GRA2=2499/5; break;
+  499 sample.c      86               case '2': GRA2=2499*2/5; break;
+  500 sample.c      87               case '3': GRA2=2499*3/5; break;
+  501 sample.c      88               case '4': GRA2=2499*4/5; break;
+  502 sample.c      89               case '5': GRA2=2499; break;
+  503 sample.c      90               case '6': GRA2=2499*6/5; break;
+  504 sample.c      91               case '7': GRA2=2499*7/5; break;
+  505 sample.c      92               case '8': GRA2=2499*8/5; break;
+  506 sample.c      93               case '9': GRA2=2499*9/5; break;
+  507 sample.c      94               case '*': break;
+  508 sample.c      95               case '0': break;
+  509 sample.c      96               case '#': break;
+  510 sample.c      97               default:  break;
+  511 sample.c      98         }
+  512 sample.c      99         if(state!=pre_state){
+  513 sample.c     100           i=0;
+  514 sample.c     101           TISRA&=0xFB;
+  515 sample.c     102           TSTR=0xFC;
+  516 sample.c     103         }
+  517 sample.c     104         pre_state = state;
+  518 sample.c     105       }
+  519 sample.c     106     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  16:44:54  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000292 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000002 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000292 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000002 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000294 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       11 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         62 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

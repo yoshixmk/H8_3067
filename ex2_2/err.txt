@@ -1,0 +1,24 @@
+H8S,H8/300 SERIES CROSS ASSEMBLER Ver. 2.0A Evaluation software
+Copyright (C) Hitachi, Ltd. 1994,1998
+Copyright (C) HITACHI MICROCOMPUTER SYSTEM LTD. 1994,1998
+Licensed Material of Hitachi, Ltd.
+  *****TOTAL ERRORS       0
+  *****TOTAL WARNINGS     0
+H SERIES LINKAGE EDITOR Ver. 5.3B Evaluation software
+Copyright (C) Hitachi, Ltd.1989,1998
+Copyright (C) HITACHI MICROCOMPUTER SYSTEM LTD. 1990,1998
+Licensed Material of Hitachi, Ltd.
+
+: input startup
+: input sample
+: library ..\TOOL\lib\C38HA.LIB
+: define $STACK(0FFF20)
+: start VECTOR(00000), P, C(00100), B(0FEF20)
+: output sample.abs
+: print sample.map
+: exit
+** 105 UNDEFINED EXTERNAL SYMBOL(startup._int_ms_timer)
+** 121 CANNOT FIND SECTION(C)
+** 121 CANNOT FIND SECTION(B)
+
+LINKAGE EDITOR COMPLETED

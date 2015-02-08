@@ -1,0 +1,81 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:11:46  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex3_6.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex3_6.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex3_6.c        2     #include <machine.h> /* set_imask_ccr関数 */
+  175 ex3_6.c        3     
+  176 ex3_6.c        4     /* sampling_8khz関数は，タイマ割り込みが発生したときに呼び出される関数 */
+  177 ex3_6.c        5     #pragma interrupt(sampling_8khz)
+  178 ex3_6.c        6     void sampling_8khz(void)
+  179 ex3_6.c        7     {
+  180 ex3_6.c        8        unsigned char speech;
+  181 ex3_6.c        9        
+  182 ex3_6.c       10        TISRA &= 0xFE; /* IMFA0を0に戻す */
+  183 ex3_6.c       11        
+  184 ex3_6.c       12        ADCSR |= 0x20; /* ADSTを1にしてA-D変換をスタートさせる */
+  185 ex3_6.c       13        while ((ADCSR & 0x80) == 0x00) /* ADFが1になるのを待つ */
+  186 ex3_6.c       14        {
+  187 ex3_6.c       15           /* A-D変換が完了するとADFは1になる */
+  188 ex3_6.c       16        }
+  189 ex3_6.c       17        ADCSR &= 0x7F; /* ADFを0に戻す */
+  190 ex3_6.c       18        
+  191 ex3_6.c       19        speech = (unsigned char)(ADDRA >> 8); /* ADDRAの上位8bitをspeechに格納する */
+  192 ex3_6.c       20        
+  193 ex3_6.c       21        DADR0 = speech; /* speechをDA0に出力する */
+  194 ex3_6.c       22     }
+  195 ex3_6.c       23     
+  196 ex3_6.c       24     void main(void)
+  197 ex3_6.c       25     {
+  198 ex3_6.c       26        set_imask_ccr(0); /* H8/3067を割り込みが受け付けられる状態にする */
+  199 ex3_6.c       27        
+  200 ex3_6.c       28        /* A-Dコンバータの設定 */
+  201 ex3_6.c       29        ADCSR |= 0x00; /* CH2を0, CH1を0, CH0を0に設定し，AN0をアナログ信号の入力端子に設定する */
+  202 ex3_6.c       30        
+  203 ex3_6.c       31        /* D-Aコンバータの設定 */
+  204 ex3_6.c       32        DACR |= 0x40; /* DAOE0を1に設定し，DA0をアナログ信号の出力端子に設定する */
+  205 ex3_6.c       33        
+  206 ex3_6.c       34        /* タイマ0の設定 */
+  207 ex3_6.c       35        TCR0 |= 0x20; /* CCLR1を0，CCLR0を1に設定する */
+  208 ex3_6.c       36        GRA0 = 0x09C3; /* 125usの設定 (1/20MHz * (0x09C3 +0x0001)) */
+  209 ex3_6.c       37        TISRA |= 0x10; /* IMIEA0を1に設定し，タイマ割り込みを有効にする */
+  210 ex3_6.c       38        
+  211 ex3_6.c       39        TSTR |= 0x01; /* STR0を1にしてタイマ0をスタートさせる */
+  212 ex3_6.c       40        
+  213 ex3_6.c       41        while (1) /* 無限ループ */
+  214 ex3_6.c       42        {
+  215 ex3_6.c       43           /* 125usごとにタイマ割り込みが発生する */
+  216 ex3_6.c       44        }
+  217 ex3_6.c       45     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:11:46  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x0000007E Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x0000007E Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x0000007E Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        0 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        2 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:          4 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

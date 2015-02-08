@@ -1,0 +1,75 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:08:05  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex3_3.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex3_3.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex3_3.c        2     #include "delay_function.h" /* 時間待ちの関数 */
+  104 ex3_3.c        3     
+  105 ex3_3.c        4     void buzzer(unsigned short us)
+  106 ex3_3.c        5     {
+  107 ex3_3.c        6        PADR = 0xFF; /* PA4を1にする */
+  108 ex3_3.c        7        delay_us(us); /* PA4を1にしたまま，us単位で時間待ちする */
+  109 ex3_3.c        8        PADR = 0xEF; /* PA4を0にする */
+  110 ex3_3.c        9        delay_us(us); /* PA4を0にしたまま，us単位で時間待ちする */
+  111 ex3_3.c       10     }
+  112 ex3_3.c       11     
+  113 ex3_3.c       12     void main(void)
+  114 ex3_3.c       13     {
+  115 ex3_3.c       14        P5DDR = 0xF0; /* P50～P53を入力端子として設定する */
+  116 ex3_3.c       15        P5PCR = 0xFF; /* P50～P53のプルアップ回路を有効にする */
+  117 ex3_3.c       16        
+  118 ex3_3.c       17        PADDR = 0xFF; /* PA0～PA7を出力端子として設定する */
+  119 ex3_3.c       18        PADR = 0xFF; /* PA0～PA7の初期値を1に設定する */
+  120 ex3_3.c       19        
+  121 ex3_3.c       20        /* タイマ1の設定 */
+  122 ex3_3.c       21        TCR1 |= 0x20; /* CCLR1を0，CCLR0を1に設定する */
+  123 ex3_3.c       22        GRA1 = 0x0013; /* 1usの設定 (1/20MHz * (0x0013 + 0x0001)) */
+  124 ex3_3.c       23        
+  125 ex3_3.c       24        /* タイマ2の設定 */
+  126 ex3_3.c       25        TCR2 |= 0x23; /* CCLR1を0，CCLR0を1，TPSC2を0，TPSC1を1, TPSC0を1に設定する */
+  127 ex3_3.c       26        GRA2 = 0x09C3; /* 1msの設定 (1/20MHz * 8 * (0x09C3 + 0x0001)) */
+  128 ex3_3.c       27        
+  129 ex3_3.c       28        while (1) /* 無限ループ */
+  130 ex3_3.c       29        {
+  131 ex3_3.c       30           if (P5DR == 0xFD) /* ONスイッチだけを押したとき */
+  132 ex3_3.c       31           {
+  133 ex3_3.c       32              buzzer(500); /* 周期が1000us（= 500us * 2）となる波形パターンを出力する */
+  134 ex3_3.c       33           }
+  135 ex3_3.c       34           else if (P5DR == 0xFE) /* OFFスイッチだけを押したとき */
+  136 ex3_3.c       35           {
+  137 ex3_3.c       36              buzzer(1000); /* 周期が2000us（= 1000us * 2）となる波形パターンを出力する */
+  138 ex3_3.c       37           }
+  139 ex3_3.c       38        }
+  140 ex3_3.c       39     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:08:05  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x000000F8 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x000000F8 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x000000F8 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        0 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        4 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         13 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

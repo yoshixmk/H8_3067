@@ -1,0 +1,114 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  14:49:08  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex4_4.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex4_4.c        1     #include "H8_register_mode5.h" /* H8/3067のレジスタ（モード5） */
+   68 ex4_4.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex4_4.c        3     #include "packet_definition.h" /* パケットの定義 */
+  154 ex4_4.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  160 ex4_4.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  213 ex4_4.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  249 ex4_4.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  318 ex4_4.c        8     #include "NIC_function_mode5.h" /* RTL8019ASの関数（モード5） */
+  525 ex4_4.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  570 ex4_4.c       10     #include "utility_function.h" /* そのほかの関数 */
+  704 ex4_4.c       11     #include "ARP_function.h" /* ARPの関数 */
+  775 ex4_4.c       12     #include "ping_function.h" /* pingの関数 */
+  812 ex4_4.c       13     
+  813 ex4_4.c       14     void main(void)
+  814 ex4_4.c       15     {
+  815 ex4_4.c       16        unsigned char packet_type;
+  816 ex4_4.c       17        ARP_PACKET *arp_packet;
+  817 ex4_4.c       18        PING_PACKET *ping_packet;
+  818 ex4_4.c       19        
+  819 ex4_4.c       20        H8_register_init(); /* H8/3067のレジスタの設定 */
+  820 ex4_4.c       21        LCD_init(); /* SC1602Bの初期化 */
+  821 ex4_4.c       22        NIC_init(); /* RTL8019ASの初期化 */
+  822 ex4_4.c       23        
+  823 ex4_4.c       24        /* 送信元IPアドレスの設定 */
+  824 ex4_4.c       25        src_IP[0] = 192;
+  825 ex4_4.c       26        src_IP[1] = 168;
+  826 ex4_4.c       27        src_IP[2] = 0;
+  827 ex4_4.c       28        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  828 ex4_4.c       29        
+  829 ex4_4.c       30        LCD_clear(); /* 表示クリア */
+  830 ex4_4.c       31        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  831 ex4_4.c       32        
+  832 ex4_4.c       33        while (1) /* 無限ループ */
+  833 ex4_4.c       34        {
+  834 ex4_4.c       35           packet_type = 0; /* packet_typeを0にする */
+  835 ex4_4.c       36           
+  836 ex4_4.c       37           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+  837 ex4_4.c       38           {
+  838 ex4_4.c       39              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+  839 ex4_4.c       40              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  840 ex4_4.c       41                  /* ARPのパケットのとき */
+  841 ex4_4.c       42                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  842 ex4_4.c       43                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  843 ex4_4.c       44                  (arp_packet -> arp_operation == 1)
+  844 ex4_4.c       45                  /* ARPリクエストのとき */
+  845 ex4_4.c       46                 )
+  846 ex4_4.c       47              {
+  847 ex4_4.c       48                 packet_type = 'a'; /* packet_typeを'a'にする */
+  848 ex4_4.c       49              }
+  849 ex4_4.c       50              
+  850 ex4_4.c       51              ping_packet = (PING_PACKET *)packet; /* packetをPING_PACKET構造体に当てはめる */
+  851 ex4_4.c       52              if ((ping_packet -> eth_ethernet_type == 0x0800) && 
+  852 ex4_4.c       53                  /* IPのパケットのとき */
+  853 ex4_4.c       54                  (IP_compare(ping_packet -> ip_dst_IP, src_IP) == 0) && 
+  854 ex4_4.c       55                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  855 ex4_4.c       56                  (ping_packet -> ip_protocol == 1) && 
+  856 ex4_4.c       57                  /* ICMPのパケットのとき */
+  857 ex4_4.c       58                  (ping_packet -> ping_type == 8)
+  858 ex4_4.c       59                  /* pingリクエストのとき */
+  859 ex4_4.c       60                 )
+  860 ex4_4.c       61              {
+  861 ex4_4.c       62                 packet_type = 'p'; /* packet_typeを'p'にする */
+  862 ex4_4.c       63              }
+  863 ex4_4.c       64           }
+  864 ex4_4.c       65           
+  865 ex4_4.c       66           switch (packet_type) /* packet_typeにしたがって処理を行う */
+  866 ex4_4.c       67           {
+  867 ex4_4.c       68              case 'a': /* packet_typeが'a'のとき */
+  868 ex4_4.c       69                 LCD_display(packet_type); /* 液晶ディスプレイにpacket_typeを表示する */
+  869 ex4_4.c       70                 ARP_reply(packet); /* ARPリプライ */
+  870 ex4_4.c       71                 break;
+  871 ex4_4.c       72              case 'p': /* packet_typeが'p'のとき */
+  872 ex4_4.c       73                 LCD_display(packet_type); /* 液晶ディスプレイにpacket_typeを表示する */
+  873 ex4_4.c       74                 ping_reply(packet); /* pingリプライ */
+  874 ex4_4.c       75                 break;
+  875 ex4_4.c       76           }
+  876 ex4_4.c       77        }
+  877 ex4_4.c       78     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  14:49:08  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000B54 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000114 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000B54 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000114 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000C68 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       29 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        118 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

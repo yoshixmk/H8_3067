@@ -1,0 +1,92 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=sample.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input sample
+library ..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output sample.abs
+print sample.map
+exit
+** 121 CANNOT FIND SECTION(C)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000083   H'00000084
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000083   H'00000084
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'00000255   H'0000014C
+                                                              sample                             sample                          
+                                  H'00000256    -    H'0000027D   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'0000027E    -    H'00000293   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00000293   H'00000194
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'000FEF20    -    H'000FEF21   H'00000002
+                                                              sample                             sample                          
+
+* TOTAL ADDRESS *                 H'000FEF20    -    H'000FEF21   H'00000002
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $sp_regsv$3                          H'00000256           DAT
+                                  $spregld2$3                          H'0000027E           DAT
+                                  _int_ms_timer                        H'000001E8           ENT
+                                  _main                                H'00000222           ENT
+                                  _ms_timer                            H'000001BA           ENT
+                                  _sci_close                           H'00000132           ENT
+                                  _sci_getc                            H'00000134           ENT
+                                  _sci_gets                            H'0000015C           ENT
+                                  _sci_open                            H'0000010A           ENT
+                                  _sci_putc                            H'0000017C           ENT
+                                  _sci_puts                            H'000001A2           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

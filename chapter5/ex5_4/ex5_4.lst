@@ -1,0 +1,175 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  20:00:07  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex5_4.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex5_4.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex5_4.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex5_4.c        3     #include "packet_definition.h" /* パケットの定義 */
+  165 ex5_4.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  183 ex5_4.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  236 ex5_4.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  272 ex5_4.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  341 ex5_4.c        8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  551 ex5_4.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  596 ex5_4.c       10     #include "utility_function.h" /* そのほかの関数 */
+  730 ex5_4.c       11     #include "ARP_function.h" /* ARPの関数 */
+  801 ex5_4.c       12     #include "speech_packet_function.h" /* 音声データのパケットの関数 */
+  932 ex5_4.c       13     #include <machine.h> /* set_imask_ccr関数 */
+ 1039 ex5_4.c       14     
+ 1040 ex5_4.c       15     /* sampling_8khz関数は，タイマ割り込みが発生したときに呼び出される関数 */
+ 1041 ex5_4.c       16     #pragma interrupt(sampling_8khz)
+ 1042 ex5_4.c       17     void sampling_8khz(void)
+ 1043 ex5_4.c       18     {
+ 1044 ex5_4.c       19        TISRA &= 0xFE; /* IMFA0を0に戻す */
+ 1045 ex5_4.c       20        
+ 1046 ex5_4.c       21        if (da_buffer_flag == 0) /* da_buffer_flagが0のとき */
+ 1047 ex5_4.c       22        {
+ 1048 ex5_4.c       23           DADR0 = da_buffer0[da_counter];
+ 1049 ex5_4.c       24           /* da_buffer0に格納されている音声データをDA0に出力する */
+ 1050 ex5_4.c       25        }
+ 1051 ex5_4.c       26        else if (da_buffer_flag == 1) /* da_buffer_flagが1のとき */
+ 1052 ex5_4.c       27        {
+ 1053 ex5_4.c       28           DADR0 = da_buffer1[da_counter];
+ 1054 ex5_4.c       29           /* da_buffer1に格納されている音声データをDA0に出力する */
+ 1055 ex5_4.c       30        }
+ 1056 ex5_4.c       31        
+ 1057 ex5_4.c       32        da_counter++; /* da_counterをインクリメントする */
+ 1058 ex5_4.c       33        if (da_counter == 160) /* da_counterが160になったとき */
+ 1059 ex5_4.c       34        {
+ 1060 ex5_4.c       35           da_buffer_flag ^= 1;
+ 1061 ex5_4.c       36           /* XOR演算によって，da_buffer_flagが0のときは1，da_buffer_flagが1のときは0にする */
+ 1062 ex5_4.c       37           
+ 1063 ex5_4.c       38           da_counter = 0;
+ 1064 ex5_4.c       39           /* da_counterを0に戻す */
+ 1065 ex5_4.c       40        }
+ 1066 ex5_4.c       41     }
+ 1067 ex5_4.c       42     
+ 1068 ex5_4.c       43     void main(void)
+ 1069 ex5_4.c       44     {
+ 1070 ex5_4.c       45        unsigned short i;
+ 1071 ex5_4.c       46        unsigned char packet_type;
+ 1072 ex5_4.c       47        ARP_PACKET *arp_packet;
+ 1073 ex5_4.c       48        SPEECH_PACKET *speech_packet;
+ 1074 ex5_4.c       49        
+ 1075 ex5_4.c       50        set_imask_ccr(0); /* H8/3067を割り込みが受け付けられる状態にする */
+ 1076 ex5_4.c       51        
+ 1077 ex5_4.c       52        H8_register_init(); /* H8/3067のレジスタの設定 */
+ 1078 ex5_4.c       53        LCD_init(); /* SC1602Bの初期化 */
+ 1079 ex5_4.c       54        NIC_init(); /* RTL8019ASの初期化 */
+ 1080 ex5_4.c       55        
+ 1081 ex5_4.c       56        /* 送信元IPアドレスの設定 */
+ 1082 ex5_4.c       57        src_IP[0] = 192;
+ 1083 ex5_4.c       58        src_IP[1] = 168;
+ 1084 ex5_4.c       59        src_IP[2] = 0;
+ 1085 ex5_4.c       60        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+ 1086 ex5_4.c       61        
+ 1087 ex5_4.c       62        src_port = 20000; /* 送信元ポート番号の設定 */
+ 1088 ex5_4.c       63        
+ 1089 ex5_4.c       64        LCD_clear(); /* 表示クリア */
+ 1090 ex5_4.c       65        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+ 1091 ex5_4.c       66        
+ 1092 ex5_4.c       67        da_buffer_flag = 0; /* da_buffer_flagの初期値 */
+ 1093 ex5_4.c       68        da_counter = 0; /* da_counterの初期値 */
+ 1094 ex5_4.c       69        for (i = 0; i < 160; i++)
+ 1095 ex5_4.c       70        {
+ 1096 ex5_4.c       71           da_buffer0[i] = 128; /* da_buffer0の初期値（音声データのオフセットは128） */
+ 1097 ex5_4.c       72           da_buffer1[i] = 128; /* da_buffer1の初期値（音声データのオフセットは128） */
+ 1098 ex5_4.c       73        }
+ 1099 ex5_4.c       74        
+ 1100 ex5_4.c       75        TISRA |= 0x10; /* IMIEA0を1に設定し，タイマ割り込みを有効にする */
+ 1101 ex5_4.c       76        TSTR |= 0x01; /* STR0を1にしてタイマ0をスタートさせる */
+ 1102 ex5_4.c       77        
+ 1103 ex5_4.c       78        while (1) /* 無限ループ */
+ 1104 ex5_4.c       79        {
+ 1105 ex5_4.c       80           packet_type = 0; /* packet_typeを0にする */
+ 1106 ex5_4.c       81           
+ 1107 ex5_4.c       82           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+ 1108 ex5_4.c       83           {
+ 1109 ex5_4.c       84              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+ 1110 ex5_4.c       85              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+ 1111 ex5_4.c       86                  /* ARPのパケットのとき */
+ 1112 ex5_4.c       87                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+ 1113 ex5_4.c       88                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1114 ex5_4.c       89                  (arp_packet -> arp_operation == 1)
+ 1115 ex5_4.c       90                  /* ARPリクエストのとき */
+ 1116 ex5_4.c       91                 )
+ 1117 ex5_4.c       92              {
+ 1118 ex5_4.c       93                 packet_type = 'a'; /* packet_typeを'a'にする */
+ 1119 ex5_4.c       94              }
+ 1120 ex5_4.c       95              
+ 1121 ex5_4.c       96              speech_packet = (SPEECH_PACKET *)packet; /* packetをSPEECH_PACKET構造体に当てはめる */
+ 1122 ex5_4.c       97              if ((speech_packet -> eth_ethernet_type == 0x0800) && 
+ 1123 ex5_4.c       98                  /* IPのパケットのとき */
+ 1124 ex5_4.c       99                  (IP_compare(speech_packet -> ip_dst_IP, src_IP) == 0) && 
+ 1125 ex5_4.c      100                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1126 ex5_4.c      101                  (speech_packet -> ip_protocol == 17) && 
+ 1127 ex5_4.c      102                  /* UDPのパケットのとき */
+ 1128 ex5_4.c      103                  (speech_packet -> udp_dst_port == src_port) && 
+ 1129 ex5_4.c      104                  /* パケットに記述されている宛先ポート番号が送信元ポート番号に一致したとき */
+ 1130 ex5_4.c      105                  (speech_packet_error_check(packet) != 1)
+ 1131 ex5_4.c      106                  /* パケットにエラーがないとき */
+ 1132 ex5_4.c      107                 )
+ 1133 ex5_4.c      108              {
+ 1134 ex5_4.c      109                 packet_type = 's'; /* packet_typeを's'にする */
+ 1135 ex5_4.c      110              }
+ 1136 ex5_4.c      111           }
+ 1137 ex5_4.c      112           
+ 1138 ex5_4.c      113           switch (packet_type) /* packet_typeにしたがって処理を行う */
+ 1139 ex5_4.c      114           {
+ 1140 ex5_4.c      115              case 'a': /* packet_typeが'a'のとき */
+ 1141 ex5_4.c      116                 ARP_reply(packet); /* ARPリプライ */
+ 1142 ex5_4.c      117                 break;
+ 1143 ex5_4.c      118              case 's': /* packet_typeが's'のとき */
+ 1144 ex5_4.c      119                 speech_packet = (SPEECH_PACKET *)packet; /* packetをSPEECH_PACKET構造体に当てはめる */
+ 1145 ex5_4.c      120                 if (da_buffer_flag == 0) /* da_buffer_flagが0のとき */
+ 1146 ex5_4.c      121                 {
+ 1147 ex5_4.c      122                    for (i = 0; i < 160; i++)
+ 1148 ex5_4.c      123                    {
+ 1149 ex5_4.c      124                       da_buffer1[i] = speech_packet -> speech_data[i];
+ 1150 ex5_4.c      125                       /* パケットに搭載されている音声データをda_buffer1に格納する */
+ 1151 ex5_4.c      126                    }
+ 1152 ex5_4.c      127                 }
+ 1153 ex5_4.c      128                 else if (da_buffer_flag == 1) /* da_buffer_flagが1のとき */
+ 1154 ex5_4.c      129                 {
+ 1155 ex5_4.c      130                    for (i = 0; i < 160; i++)
+ 1156 ex5_4.c      131                    {
+ 1157 ex5_4.c      132                       da_buffer0[i] = speech_packet -> speech_data[i];
+ 1158 ex5_4.c      133                       /* パケットに搭載されている音声データをda_buffer0に格納する */
+ 1159 ex5_4.c      134                    }
+ 1160 ex5_4.c      135                 }
+ 1161 ex5_4.c      136                 break;
+ 1162 ex5_4.c      137           }
+ 1163 ex5_4.c      138        }
+ 1164 ex5_4.c      139     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  20:00:08  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000F28 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x000003A2 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000F28 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x000003A2 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x000012CA Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        3 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       43 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        155 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

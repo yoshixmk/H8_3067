@@ -1,0 +1,76 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:13:45  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex4_1.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex4_1.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex4_1.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex4_1.c        3     #include "global_variables.h" /* グローバル変数の定義 */
+  113 ex4_1.c        4     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  166 ex4_1.c        5     #include "delay_function.h" /* 時間待ちの関数 */
+  202 ex4_1.c        6     #include "LCD_function.h" /* SC1602Bの関数 */
+  271 ex4_1.c        7     #include "NIC_function.h" /* RTL8019ASの関数 */
+  481 ex4_1.c        8     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  526 ex4_1.c        9     #include "utility_function.h" /* そのほかの関数 */
+  660 ex4_1.c       10     
+  661 ex4_1.c       11     void main(void)
+  662 ex4_1.c       12     {
+  663 ex4_1.c       13        char str_IP[16];
+  664 ex4_1.c       14        char str_MAC[13];
+  665 ex4_1.c       15        
+  666 ex4_1.c       16        H8_register_init(); /* H8/3067のレジスタの設定 */
+  667 ex4_1.c       17        LCD_init(); /* SC1602Bの初期化 */
+  668 ex4_1.c       18        NIC_init(); /* RTL8019ASの初期化 */
+  669 ex4_1.c       19        
+  670 ex4_1.c       20        /* 送信元IPアドレスの設定 */
+  671 ex4_1.c       21        src_IP[0] = 192;
+  672 ex4_1.c       22        src_IP[1] = 168;
+  673 ex4_1.c       23        src_IP[2] = 0;
+  674 ex4_1.c       24        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  675 ex4_1.c       25        
+  676 ex4_1.c       26        LCD_clear(); /* 表示クリア */
+  677 ex4_1.c       27        
+  678 ex4_1.c       28        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  679 ex4_1.c       29        IP_to_str(src_IP, str_IP); /* src_IPをstr_IP（文字列）に変換する */
+  680 ex4_1.c       30        LCD_print(str_IP); /* 液晶ディスプレイにstr_IPを表示する */
+  681 ex4_1.c       31        
+  682 ex4_1.c       32        LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+  683 ex4_1.c       33        MAC_to_str(src_MAC, str_MAC); /* src_MACをstr_MAC（文字列）に変換する */
+  684 ex4_1.c       34        LCD_print(str_MAC); /* 液晶ディスプレイにstr_MACを表示する */
+  685 ex4_1.c       35        
+  686 ex4_1.c       36        while (1) /* 無限ループ */
+  687 ex4_1.c       37        {
+  688 ex4_1.c       38           /* 何もしない */
+  689 ex4_1.c       39        }
+  690 ex4_1.c       40     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:13:45  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000932 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000114 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000932 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000114 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000A46 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       26 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         98 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

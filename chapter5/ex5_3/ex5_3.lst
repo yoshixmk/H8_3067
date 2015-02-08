@@ -1,0 +1,164 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  13:45:15  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex5_3.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex5_3.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex5_3.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex5_3.c        3     #include "packet_definition.h" /* パケットの定義 */
+  165 ex5_3.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  183 ex5_3.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  236 ex5_3.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  272 ex5_3.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  341 ex5_3.c        8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  551 ex5_3.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  596 ex5_3.c       10     #include "utility_function.h" /* そのほかの関数 */
+  730 ex5_3.c       11     #include "ARP_function.h" /* ARPの関数 */
+  801 ex5_3.c       12     #include "speech_packet_function.h" /* 音声データのパケットの関数 */
+  932 ex5_3.c       13     #include <machine.h> /* set_imask_ccr関数 */
+ 1039 ex5_3.c       14     
+ 1040 ex5_3.c       15     /* sampling_8khz関数は，タイマ割り込みが発生したときに呼び出される関数 */
+ 1041 ex5_3.c       16     #pragma interrupt(sampling_8khz)
+ 1042 ex5_3.c       17     void sampling_8khz(void)
+ 1043 ex5_3.c       18     {
+ 1044 ex5_3.c       19        TISRA &= 0xFE; /* IMFA0を0に戻す */
+ 1045 ex5_3.c       20        
+ 1046 ex5_3.c       21        ADCSR |= 0x20; /* ADSTを1にしてA-D変換をスタートさせる */
+ 1047 ex5_3.c       22        while ((ADCSR & 0x80) == 0x00) /* ADFが1になるのを待つ */
+ 1048 ex5_3.c       23        {
+ 1049 ex5_3.c       24           /* A-D変換が完了するとADFは1になる */
+ 1050 ex5_3.c       25        }
+ 1051 ex5_3.c       26        ADCSR &= 0x7F; /* ADFを0に戻す */
+ 1052 ex5_3.c       27        
+ 1053 ex5_3.c       28        if (ad_buffer_flag == 0) /* ad_buffer_flagが0のとき */
+ 1054 ex5_3.c       29        {
+ 1055 ex5_3.c       30           ad_buffer0[ad_counter] = (unsigned char)(ADDRA >> 8);
+ 1056 ex5_3.c       31           /* ADDRAの上位8bitをad_buffer0に格納する */
+ 1057 ex5_3.c       32        }
+ 1058 ex5_3.c       33        else if (ad_buffer_flag == 1) /* ad_buffer_flagが1のとき */
+ 1059 ex5_3.c       34        {
+ 1060 ex5_3.c       35           ad_buffer1[ad_counter] = (unsigned char)(ADDRA >> 8);
+ 1061 ex5_3.c       36           /* ADDRAの上位8bitをad_buffer1に格納する */
+ 1062 ex5_3.c       37        }
+ 1063 ex5_3.c       38        
+ 1064 ex5_3.c       39        ad_counter++; /* ad_counterをインクリメントする */
+ 1065 ex5_3.c       40        if (ad_counter == 160) /* ad_counterが160になったとき */
+ 1066 ex5_3.c       41        {
+ 1067 ex5_3.c       42           speech_packet_send_flag = 1;
+ 1068 ex5_3.c       43           /* speech_packet_send_flagを1にする */
+ 1069 ex5_3.c       44           
+ 1070 ex5_3.c       45           ad_buffer_flag ^= 1;
+ 1071 ex5_3.c       46           /* XOR演算によって，ad_buffer_flagが0のときは1，ad_buffer_flagが1のときは0にする */
+ 1072 ex5_3.c       47           
+ 1073 ex5_3.c       48           ad_counter = 0;
+ 1074 ex5_3.c       49           /* ad_counterを0に戻す */
+ 1075 ex5_3.c       50        }
+ 1076 ex5_3.c       51     }
+ 1077 ex5_3.c       52     
+ 1078 ex5_3.c       53     void main(void)
+ 1079 ex5_3.c       54     {
+ 1080 ex5_3.c       55        unsigned short i;
+ 1081 ex5_3.c       56        unsigned char packet_type;
+ 1082 ex5_3.c       57        ARP_PACKET *arp_packet;
+ 1083 ex5_3.c       58        
+ 1084 ex5_3.c       59        set_imask_ccr(0); /* H8/3067を割り込みが受け付けられる状態にする */
+ 1085 ex5_3.c       60        
+ 1086 ex5_3.c       61        H8_register_init(); /* H8/3067のレジスタの設定 */
+ 1087 ex5_3.c       62        LCD_init(); /* SC1602Bの初期化 */
+ 1088 ex5_3.c       63        NIC_init(); /* RTL8019ASの初期化 */
+ 1089 ex5_3.c       64        
+ 1090 ex5_3.c       65        /* 送信元IPアドレスの設定 */
+ 1091 ex5_3.c       66        src_IP[0] = 192;
+ 1092 ex5_3.c       67        src_IP[1] = 168;
+ 1093 ex5_3.c       68        src_IP[2] = 0;
+ 1094 ex5_3.c       69        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+ 1095 ex5_3.c       70        
+ 1096 ex5_3.c       71        /* 宛先IPアドレスの設定 */
+ 1097 ex5_3.c       72        dst_IP[0] = 192;
+ 1098 ex5_3.c       73        dst_IP[1] = 168;
+ 1099 ex5_3.c       74        dst_IP[2] = 0;
+ 1100 ex5_3.c       75        dst_IP[3] = 2;
+ 1101 ex5_3.c       76        
+ 1102 ex5_3.c       77        src_port = 10000; /* 送信元ポート番号の設定 */
+ 1103 ex5_3.c       78        dst_port = 20000; /* 宛先ポート番号の設定 */
+ 1104 ex5_3.c       79        
+ 1105 ex5_3.c       80        LCD_clear(); /* 表示クリア */
+ 1106 ex5_3.c       81        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+ 1107 ex5_3.c       82        
+ 1108 ex5_3.c       83        delay_ms(2000); /* 2000ms（2秒）の時間待ち */
+ 1109 ex5_3.c       84        
+ 1110 ex5_3.c       85        ARP_request(packet); /* ARPリクエスト */
+ 1111 ex5_3.c       86        
+ 1112 ex5_3.c       87        packet_type = 0; /* packet_typeを0にする */
+ 1113 ex5_3.c       88        do
+ 1114 ex5_3.c       89        {
+ 1115 ex5_3.c       90           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+ 1116 ex5_3.c       91           {
+ 1117 ex5_3.c       92              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+ 1118 ex5_3.c       93              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+ 1119 ex5_3.c       94                  /* ARPのパケットのとき */
+ 1120 ex5_3.c       95                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+ 1121 ex5_3.c       96                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1122 ex5_3.c       97                  (arp_packet -> arp_operation == 2)
+ 1123 ex5_3.c       98                  /* ARPリプライのとき */
+ 1124 ex5_3.c       99                 )
+ 1125 ex5_3.c      100              {
+ 1126 ex5_3.c      101                 for (i = 0; i < 6; i++)
+ 1127 ex5_3.c      102                 {
+ 1128 ex5_3.c      103                    dst_MAC[i] = arp_packet -> arp_src_MAC[i];
+ 1129 ex5_3.c      104                    /* パケットに記述されている送信元MACアドレスをdst_MACに格納する */
+ 1130 ex5_3.c      105                 }
+ 1131 ex5_3.c      106                 packet_type = 'a'; /* packet_typeを'a'にする */
+ 1132 ex5_3.c      107              }
+ 1133 ex5_3.c      108           }
+ 1134 ex5_3.c      109        } while (packet_type != 'a'); /* packet_typeが'a'になるまで待つ */
+ 1135 ex5_3.c      110        
+ 1136 ex5_3.c      111        src_ip_id = 0; /* src_ip_idの初期値 */
+ 1137 ex5_3.c      112        speech_packet_send_flag = 0; /* speech_packet_send_flagの初期値 */
+ 1138 ex5_3.c      113        ad_buffer_flag = 0; /* ad_buffer_flagの初期値 */
+ 1139 ex5_3.c      114        ad_counter = 0; /* ad_counterの初期値 */
+ 1140 ex5_3.c      115        
+ 1141 ex5_3.c      116        TISRA |= 0x10; /* IMIEA0を1に設定し，タイマ割り込みを有効にする */
+ 1142 ex5_3.c      117        TSTR |= 0x01; /* STR0を1にしてタイマ0をスタートさせる */
+ 1143 ex5_3.c      118        
+ 1144 ex5_3.c      119        while (1) /* 無限ループ */
+ 1145 ex5_3.c      120        {
+ 1146 ex5_3.c      121           if (speech_packet_send_flag == 1) /* speech_packet_send_flagが1のとき */
+ 1147 ex5_3.c      122           {
+ 1148 ex5_3.c      123              speech_packet_send(packet); /* 音声データのパケットを送信する */
+ 1149 ex5_3.c      124              src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1150 ex5_3.c      125              speech_packet_send_flag = 0; /* speech_packet_send_flagを0に戻す */
+ 1151 ex5_3.c      126           }
+ 1152 ex5_3.c      127        }
+ 1153 ex5_3.c      128     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  13:45:16  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000EFE Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x000003A2 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000EFE Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x000003A2 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x000012A0 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        3 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       43 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        150 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

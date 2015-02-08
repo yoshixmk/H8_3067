@@ -1,0 +1,133 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=demo.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input Start
+input demo
+library ..\TOOL\lib\C38HA.LIB
+
+DEFINE  $STACK(0ffff20)
+
+start VECTOR(0000),P,C(0100),B(0ffef20)
+output demo.abs 
+print demo.map 
+exit 
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000063   H'00000064
+                                                              Start                              Start                           
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000063   H'00000064
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'0000010B   H'0000000C
+                                                              Start                              Start                           
+                                  H'0000010C    -    H'00001193   H'00001088
+                                                              demo                               demo                            
+                                  H'00001194    -    H'000011BF   H'0000002C
+                                                              memset                             memset                          
+                                  H'000011C0    -    H'000011E9   H'0000002A
+                                                              bfinc3                             bfinc3                          
+                                  H'000011EA    -    H'00001203   H'0000001A
+                                                              bfuc3                              bfuc3                           
+                                  H'00001204    -    H'00001223   H'00000020
+                                                              mull3                              mull3                           
+                                  H'00001224    -    H'0000124B   H'00000028
+                                                              mvn3                               mvn3                            
+                                  H'0000124C    -    H'00001273   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'00001274    -    H'00001289   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00001289   H'0000118A
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+C                                 H'0000128A    -    H'000012FD   H'00000074
+                                                              demo                               demo                            
+
+* TOTAL ADDRESS *                 H'0000128A    -    H'000012FD   H'00000074
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'00FFEF20    -    H'00FFF130   H'00000211
+                                                              demo                               demo                            
+
+* TOTAL ADDRESS *                 H'00FFEF20    -    H'00FFF130   H'00000211
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $BFINC$3                             H'000011C0           DAT
+                                  $BFUC$3                              H'000011EA           DAT
+                                  $MULL$3                              H'00001204           DAT
+                                  $MVN$3                               H'00001224           DAT
+                                  $sp_regsv$3                          H'0000124C           DAT
+                                  $spregld2$3                          H'00001274           DAT
+                                  _Buffer                              H'00FFEF30           DAT
+                                  _CIP                                 H'00000E28           ENT
+                                  _Clear_LCD                           H'000005EA           ENT
+                                  _CompareIP                           H'00000DF6           ENT
+                                  _GetChecksumIP                       H'0000112E           ENT
+                                  _InitPort                            H'00000432           ENT
+                                  _InitRTL8019AS                       H'00000852           ENT
+                                  _Init_LCD                            H'000004FE           ENT
+                                  _Locate_LCD                          H'00000610           ENT
+                                  _Print_LCD                           H'0000065C           ENT
+                                  _Proc8kHz                            H'00000AFA           ENT
+                                  _ReceiveEtherData                    H'00000B0C           ENT
+                                  _SendArpReply                        H'00000EB0           ENT
+                                  _SendEtherData                       H'00001080           ENT
+                                  _SendPingMessage                     H'00000F62           ENT
+                                  _Wait_LCD                            H'0000081C           ENT
+                                  _Write_LCD                           H'000007B2           ENT
+                                  _databus                             H'00000AA4           ENT
+                                  _destMacAddress                      H'00FFEF2A           DAT
+                                  _getbus                              H'00000A02           ENT
+                                  _keyin                               H'00000AB6           ENT
+                                  _main                                H'0000010C           ENT
+                                  _memset                              H'00001194           ENT
+                                  _myIpAddress                         H'0000128A           DAT
+                                  _myMacAddress                        H'00FFEF24           DAT
+                                  _pNIC                                H'00FFEF20           DAT
+                                  _putbus                              H'00000A50           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'00FFFF20

@@ -1,0 +1,100 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:10:09  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex3_5.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex3_5.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex3_5.c        2     #include "delay_function.h" /* 時間待ちの関数 */
+  104 ex3_5.c        3     #include "LCD_function.h" /* SC1602Bの関数 */
+  173 ex3_5.c        4     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  218 ex3_5.c        5     
+  219 ex3_5.c        6     void main(void)
+  220 ex3_5.c        7     {
+  221 ex3_5.c        8        char key, previous_key;
+  222 ex3_5.c        9        unsigned char cursor, line;
+  223 ex3_5.c       10        
+  224 ex3_5.c       11        P4DDR = 0xF0; /* P40～P43を入力端子，P44～P47を出力端子として設定する */
+  225 ex3_5.c       12        P4PCR = 0x0F; /* P40～P43のプルアップ回路を有効にする */
+  226 ex3_5.c       13        
+  227 ex3_5.c       14        PBDDR = 0xFF; /* PB0～PB7を出力端子として設定する */
+  228 ex3_5.c       15        PBDR = 0xFF; /* PB0～PB7の初期値を1に設定する */
+  229 ex3_5.c       16        
+  230 ex3_5.c       17        /* タイマ1の設定 */
+  231 ex3_5.c       18        TCR1 |= 0x20; /* CCLR1を0，CCLR0を1に設定する */
+  232 ex3_5.c       19        GRA1 = 0x0013; /* 1usの設定 (1/20MHz * (0x0013 + 0x0001)) */
+  233 ex3_5.c       20        
+  234 ex3_5.c       21        /* タイマ2の設定 */
+  235 ex3_5.c       22        TCR2 |= 0x23; /* CCLR1を0，CCLR0を1，TPSC2を0，TPSC1を1, TPSC0を1に設定する */
+  236 ex3_5.c       23        GRA2 = 0x09C3; /* 1msの設定 (1/20MHz * 8 * (0x09C3 + 0x0001)) */
+  237 ex3_5.c       24        
+  238 ex3_5.c       25        LCD_init(); /* SC1602Bの初期化 */
+  239 ex3_5.c       26        
+  240 ex3_5.c       27        LCD_clear(); /* 表示クリア */
+  241 ex3_5.c       28        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  242 ex3_5.c       29        
+  243 ex3_5.c       30        cursor = 0; /* cursorの初期値 */
+  244 ex3_5.c       31        line = 0; /* lineの初期値 */
+  245 ex3_5.c       32        previous_key = 0; /* previous_keyの初期値 */
+  246 ex3_5.c       33        
+  247 ex3_5.c       34        while (1) /* 無限ループ */
+  248 ex3_5.c       35        {
+  249 ex3_5.c       36           while (cursor < 16) /* cursorが16よりも小さいとき */
+  250 ex3_5.c       37           {
+  251 ex3_5.c       38              delay_ms(20);
+  252 ex3_5.c       39              /* 20msの時間待ちをはさむことで，チャタリングによるスイッチの誤検出を回避する */
+  253 ex3_5.c       40              
+  254 ex3_5.c       41              key = matrix_key_read(); /* 現在のキーをチェックする */
+  255 ex3_5.c       42              
+  256 ex3_5.c       43              if ((key != 0) && (key != previous_key))
+  257 ex3_5.c       44              /* 現在のキーが0ではなく，直前のキーとは異なるとき */
+  258 ex3_5.c       45              {
+  259 ex3_5.c       46                 if ((cursor == 0) && (line == 0)) /* cursorが0，lineが0のとき */
+  260 ex3_5.c       47                 {
+  261 ex3_5.c       48                    LCD_clear(); /* 表示クリア */
+  262 ex3_5.c       49                    LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  263 ex3_5.c       50                 }
+  264 ex3_5.c       51                 else if ((cursor == 0) && (line == 1)) /* cursorが0，lineが1のとき */
+  265 ex3_5.c       52                 {
+  266 ex3_5.c       53                    LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+  267 ex3_5.c       54                 }
+  268 ex3_5.c       55                 LCD_display(key); /* 液晶ディスプレイに現在のキーを表示する */
+  269 ex3_5.c       56                 cursor++; /* cursorをインクリメントする */
+  270 ex3_5.c       57              }
+  271 ex3_5.c       58              previous_key = key;
+  272 ex3_5.c       59              /* 現在のキーを，次のチェック時刻における直前のキーとして定義する */
+  273 ex3_5.c       60           }
+  274 ex3_5.c       61           cursor = 0; /* cursorを0に戻す */
+  275 ex3_5.c       62           line ^= 1; /* XOR演算によって，lineが0のときは1，lineが1のときは0にする */
+  276 ex3_5.c       63        }
+  277 ex3_5.c       64     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  11:10:09  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x000002C0 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x000002C0 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x000002C0 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       10 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         46 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

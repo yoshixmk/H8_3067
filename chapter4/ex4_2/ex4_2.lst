@@ -1,0 +1,115 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)12-Dec-2007  21:50:54  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex4_2.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex4_2.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex4_2.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex4_2.c        3     #include "packet_definition.h" /* パケットの定義 */
+  126 ex4_2.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  132 ex4_2.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  185 ex4_2.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  221 ex4_2.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  290 ex4_2.c        8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  500 ex4_2.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  545 ex4_2.c       10     #include "utility_function.h" /* そのほかの関数 */
+  679 ex4_2.c       11     #include "ARP_function.h" /* ARPの関数 */
+  750 ex4_2.c       12     
+  751 ex4_2.c       13     void main(void)
+  752 ex4_2.c       14     {
+  753 ex4_2.c       15        unsigned short i;
+  754 ex4_2.c       16        unsigned char packet_type;
+  755 ex4_2.c       17        char str_IP[16];
+  756 ex4_2.c       18        char str_MAC[13];
+  757 ex4_2.c       19        ARP_PACKET *arp_packet;
+  758 ex4_2.c       20        
+  759 ex4_2.c       21        H8_register_init(); /* H8/3067のレジスタの設定 */
+  760 ex4_2.c       22        LCD_init(); /* SC1602Bの初期化 */
+  761 ex4_2.c       23        NIC_init(); /* RTL8019ASの初期化 */
+  762 ex4_2.c       24        
+  763 ex4_2.c       25        /* 送信元IPアドレスの設定 */
+  764 ex4_2.c       26        src_IP[0] = 192;
+  765 ex4_2.c       27        src_IP[1] = 168;
+  766 ex4_2.c       28        src_IP[2] = 0;
+  767 ex4_2.c       29        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  768 ex4_2.c       30        
+  769 ex4_2.c       31        /* 宛先IPアドレスの設定 */
+  770 ex4_2.c       32        dst_IP[0] = 192;
+  771 ex4_2.c       33        dst_IP[1] = 168;
+  772 ex4_2.c       34        dst_IP[2] = 0;
+  773 ex4_2.c       35        dst_IP[3] = 2;
+  774 ex4_2.c       36        
+  775 ex4_2.c       37        LCD_clear(); /* 表示クリア */
+  776 ex4_2.c       38        
+  777 ex4_2.c       39        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  778 ex4_2.c       40        IP_to_str(dst_IP, str_IP); /* dst_IPをstr_IP（文字列）に変換する */
+  779 ex4_2.c       41        LCD_print(str_IP); /* 液晶ディスプレイにstr_IPを表示する */
+  780 ex4_2.c       42        
+  781 ex4_2.c       43        delay_ms(2000); /* 2000ms（2秒）の時間待ち */
+  782 ex4_2.c       44        
+  783 ex4_2.c       45        ARP_request(packet); /* ARPリクエスト */
+  784 ex4_2.c       46        
+  785 ex4_2.c       47        packet_type = 0; /* packet_typeを0にする */
+  786 ex4_2.c       48        do
+  787 ex4_2.c       49        {
+  788 ex4_2.c       50           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+  789 ex4_2.c       51           {
+  790 ex4_2.c       52              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+  791 ex4_2.c       53              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  792 ex4_2.c       54                  /* ARPのパケットのとき */
+  793 ex4_2.c       55                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  794 ex4_2.c       56                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  795 ex4_2.c       57                  (arp_packet -> arp_operation == 2)
+  796 ex4_2.c       58                  /* ARPリプライのとき */
+  797 ex4_2.c       59                 )
+  798 ex4_2.c       60              {
+  799 ex4_2.c       61                 for (i = 0; i < 6; i++)
+  800 ex4_2.c       62                 {
+  801 ex4_2.c       63                    dst_MAC[i] = arp_packet -> arp_src_MAC[i];
+  802 ex4_2.c       64                    /* パケットに記述されている送信元MACアドレスをdst_MACに格納する */
+  803 ex4_2.c       65                 }
+  804 ex4_2.c       66                 packet_type = 'a'; /* packet_typeを'a'にする */
+  805 ex4_2.c       67              }
+  806 ex4_2.c       68           }
+  807 ex4_2.c       69        } while (packet_type != 'a'); /* packet_typeが'a'になるまで待つ */
+  808 ex4_2.c       70        
+  809 ex4_2.c       71        LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+  810 ex4_2.c       72        MAC_to_str(dst_MAC, str_MAC); /* dst_MACをstr_MAC（文字列）に変換する */
+  811 ex4_2.c       73        LCD_print(str_MAC); /* 液晶ディスプレイにstr_MACを表示する */
+  812 ex4_2.c       74        
+  813 ex4_2.c       75        while (1) /* 無限ループ */
+  814 ex4_2.c       76        {
+  815 ex4_2.c       77           /* 何もしない */
+  816 ex4_2.c       78        }
+  817 ex4_2.c       79     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)12-Dec-2007  21:50:54  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000B8A Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000114 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000B8A Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000114 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000C9E Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       28 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        113 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

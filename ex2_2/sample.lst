@@ -1,0 +1,218 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)19-Nov-2014  12:04:06  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: sample.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 sample.c       1     #include <sci.h>
+  138 sample.c       2     #include <reg3067.h>
+  310 sample.c       3     #include <machine.h>
+  417 sample.c       4     
+  418 sample.c       5     void ms_timer(unsigned short ms)
+  419 sample.c       6     {
+  420 sample.c       7             int j;
+  421 sample.c       8     
+  422 sample.c       9             TSTR |= 0x04;
+  423 sample.c      10             for(j=0;j<ms;j++){
+  424 sample.c      11                     while((TISRA & 0x04) != 0x04);
+  425 sample.c      12                     TISRA &= 0xFB;
+  426 sample.c      13             }
+  427 sample.c      14             TSTR &= 0xFB;
+  428 sample.c      15     }
+  429 sample.c      16     
+  430 sample.c      17     void us_timer(unsigned short us)
+  431 sample.c      18     {
+  432 sample.c      19             int j;
+  433 sample.c      20     
+  434 sample.c      21             TSTR |= 0x02;
+  435 sample.c      22             for(j=0;j<us;j++){
+  436 sample.c      23                     while((TISRA & 0x02) != 0x02);
+  437 sample.c      24                     TISRA &= 0xFD;
+  438 sample.c      25             }
+  439 sample.c      26             TSTR &= 0xFD;
+  440 sample.c      27     }
+  441 sample.c      28     
+  442 sample.c      29     char matrix_key_read(void)
+  443 sample.c      30     {
+  444 sample.c      31             char key;
+  445 sample.c      32             unsigned char column, row;
+  446 sample.c      33     
+  447 sample.c      34             key = 0;
+  448 sample.c      35             column = 0x10;
+  449 sample.c      36     
+  450 sample.c      37             while(column <= 0x40)
+  451 sample.c      38             {
+  452 sample.c      39                     P4DR = ~column;
+  453 sample.c      40     
+  454 sample.c      41                     row =(~P4DR) & 0x0f;
+  455 sample.c      42     
+  456 sample.c      43                     if(row != 0)
+  457 sample.c      44                     {
+  458 sample.c      45                             switch(column | row)
+  459 sample.c      46                             {
+  460 sample.c      47                                     case 0x11 : key ='1'; break;
+  461 sample.c      48                                     case 0x12 : key ='2'; break;
+  462 sample.c      49                                     case 0x14 : key ='3'; break;
+  463 sample.c      50                                     case 0x18 : key ='4'; break;
+  464 sample.c      51     
+  465 sample.c      52                                     case 0x21 : key ='5'; break;
+  466 sample.c      53                                     case 0x22 : key ='6'; break;
+  467 sample.c      54                                     case 0x24 : key ='7'; break;
+  468 sample.c      55                                     case 0x28 : key ='8'; break;
+  469 sample.c      56     
+  470 sample.c      57                                     case 0x41 : key ='9'; break;
+  471 sample.c      58                                     case 0x42 : key ='.'; break;
+  472 sample.c      59                                     case 0x44 : key ='0'; break;
+  473 sample.c      60                                     case 0x48 : key ='#'; break;
+  474 sample.c      61     
+  475 sample.c      62                                     default : key = 0; break;
+  476 sample.c      63                             }
+  477 sample.c      64                     }
+  478 sample.c      65                     column = column << 1;
+  479 sample.c      66             }
+  480 sample.c      67             return key;
+  481 sample.c      68     }
+  482 sample.c      69     
+  483 sample.c      70     
+  484 sample.c      71     
+  485 sample.c      72     void LCD_write(char data, char RS)
+  486 sample.c      73     {
+  487 sample.c      74             PBDR = data & 0xF0;
+  488 sample.c      75             if(RS == 1)
+  489 sample.c      76             {
+  490 sample.c      77                     PBDR |= 0x02;/*RSに1をセットする*/
+  491 sample.c      78             }
+  492 sample.c      79             else
+  493 sample.c      80             {
+  494 sample.c      81                     PBDR &= 0xFD;/*RSに0をセットする*/
+  495 sample.c      82             }
+  496 sample.c      83     
+  497 sample.c      84             ms_timer(1);/*40ns以上の時間待ち*/
+  498 sample.c      85             PBDR |= 0x01;/*Eに1をセットする*/
+  499 sample.c      86             ms_timer(1);/*230ns以上待ち*/
+  500 sample.c      87             PBDR &= 0xFE;/*Eに0をセットする*/
+  501 sample.c      88     }
+  502 sample.c      89     
+  503 sample.c      90     void LCD_display(char code)
+  504 sample.c      91     {
+  505 sample.c      92             LCD_write(code,1);
+  506 sample.c      93             LCD_write(code << 4,1);
+  507 sample.c      94             ms_timer(1);/*40us以上待ち*/
+  508 sample.c      95     }
+  509 sample.c      96     
+  510 sample.c      97     void LCD_control(char code)
+  511 sample.c      98     {
+  512 sample.c      99             LCD_write(code, 0);
+  513 sample.c     100             LCD_write(code << 4, 0);
+  514 sample.c     101             ms_timer(1);/*40us以上待ち*/
+  515 sample.c     102     }
+  516 sample.c     103     
+  517 sample.c     104     void LCD_init(void)
+  518 sample.c     105     {
+  519 sample.c     106             ms_timer(15);
+  520 sample.c     107             LCD_write(0x30,0);
+  521 sample.c     108             ms_timer(1);
+  522 sample.c     109             LCD_write(0x30,0);
+  523 sample.c     110             ms_timer(1);
+  524 sample.c     111             LCD_write(0x30,0);
+  525 sample.c     112             ms_timer(5);
+  526 sample.c     113             LCD_write(0x20,0);
+  527 sample.c     114             ms_timer(1);
+  528 sample.c     115             LCD_control(0x28);
+  529 sample.c     116             LCD_control(0x08);
+  530 sample.c     117             LCD_control(0x0C);
+  531 sample.c     118             LCD_control(0x06);
+  532 sample.c     119     }
+  533 sample.c     120     
+  534 sample.c     121     void main(void)
+  535 sample.c     122     {
+  536 sample.c     123             char key;
+  537 sample.c     124             PADDR = 0xFF;
+  538 sample.c     125             P4DDR = 0xF0;
+  539 sample.c     126             P4PCR = 0x0F;
+  540 sample.c     127             PBDDR = 0xF3;
+  541 sample.c     128     
+  542 sample.c     129             TCR1 = 0xA0;
+  543 sample.c     130             TCR2 = 0xA3;
+  544 sample.c     131             GRA1 = 0x13;
+  545 sample.c     132     
+  546 sample.c     133             LCD_init();
+  547 sample.c     134     
+  548 sample.c     135             while(1){
+  549 sample.c     136                     key=matrix_key_read();
+  550 sample.c     137                     PADR |= 0x10;
+  551 sample.c     138                     switch(key){
+  552 sample.c     139                             case '1' :
+  553 sample.c     140                                     us_timer(956);
+  554 sample.c     141                                     PADR &= 0xEF;
+  555 sample.c     142                                     us_timer(956); break;
+  556 sample.c     143                             case '2' :
+  557 sample.c     144                                     us_timer(852);
+  558 sample.c     145                                     PADR &= 0xEF;
+  559 sample.c     146                                     us_timer(852); break;
+  560 sample.c     147                             case '3' :
+  561 sample.c     148                                     us_timer(759);
+  562 sample.c     149                                     PADR &= 0xEF;
+  563 sample.c     150                                     us_timer(759); break;
+  564 sample.c     151                             case '4' :
+  565 sample.c     152                                     us_timer(716);
+  566 sample.c     153                                     PADR &= 0xEF;
+  567 sample.c     154                                     us_timer(716); break;
+  568 sample.c     155                             case '5' :
+  569 sample.c     156                                     us_timer(638);
+  570 sample.c     157                                     PADR &= 0xEF;
+  571 sample.c     158                                     us_timer(638); break;
+  572 sample.c     159                             case '6' :
+  573 sample.c     160                                     us_timer(568);
+  574 sample.c     161                                     PADR &= 0xEF;
+  575 sample.c     162                                     us_timer(568); break;
+  576 sample.c     163                             case '7' :
+  577 sample.c     164                                     us_timer(506);
+  578 sample.c     165                                     PADR &= 0xEF;
+  579 sample.c     166                                     us_timer(506); break;
+  580 sample.c     167                             case '8' :
+  581 sample.c     168                                     us_timer(478);
+  582 sample.c     169                                     PADR &= 0xEF;
+  583 sample.c     170                                     us_timer(478); break;
+  584 sample.c     171                             case '9' :
+  585 sample.c     172                                     us_timer(423);
+  586 sample.c     173                                     PADR &= 0xEF;
+  587 sample.c     174                                     us_timer(423); break;
+  588 sample.c     175                             case '0' :
+  589 sample.c     176                                     us_timer(379);
+  590 sample.c     177                                     PADR &= 0xEF;
+  591 sample.c     178                                     us_timer(379); break;
+  592 sample.c     179                             default : key = 0; break;
+  593 sample.c     180                     }
+  594 sample.c     181             }
+  595 sample.c     182     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)19-Nov-2014  12:04:06  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000372 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000372 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000372 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       14 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         65 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

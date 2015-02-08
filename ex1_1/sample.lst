@@ -1,0 +1,67 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  14:38:36  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: sample.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 sample.c       1     #include <sci.h>
+  138 sample.c       2     #include <reg3067.h>
+  310 sample.c       3     
+  311 sample.c       4     void ms_timer(unsigned short ms)
+  312 sample.c       5     {
+  313 sample.c       6       int i;
+  314 sample.c       7       TCR2=0xA3;
+  315 sample.c       8       GRA2=2499;
+  316 sample.c       9       TSTR=0xFC;
+  317 sample.c      10       for(i = 0; i < ms; i++ ){
+  318 sample.c      11         while((TISRA & 0x04) != 0x04);
+  319 sample.c      12         TISRA&=0xFB;
+  320 sample.c      13       }
+  321 sample.c      14       TSTR&=0xFB;
+  322 sample.c      15     }
+  323 sample.c      16     
+  324 sample.c      17     void main(void)
+  325 sample.c      18     {
+  326 sample.c      19       P5DDR = 0xF0;
+  327 sample.c      20       P5PCR = 0xFF;
+  328 sample.c      21       PADDR = 0xFF;
+  329 sample.c      22       PADR = 0xFF;
+  330 sample.c      23       
+  331 sample.c      24       while(1)
+  332 sample.c      25       {
+  333 sample.c      26         PADR = 0xFB;
+  334 sample.c      27         ms_timer(500);
+  335 sample.c      28         PADR = 0xF7;
+  336 sample.c      29         ms_timer(500);
+  337 sample.c      30       }
+  338 sample.c      31     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Oct-2014  14:38:36  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x0000010C Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x0000010C Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x0000010C Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        8 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         24 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

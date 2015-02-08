@@ -1,0 +1,62 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  14:10:51  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex3_2.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex3_2.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex3_2.c        2     
+   69 ex3_2.c        3     void main(void)
+   70 ex3_2.c        4     {
+   71 ex3_2.c        5        P5DDR = 0xF0; /* P50～P53を入力端子として設定する */
+   72 ex3_2.c        6        P5PCR = 0xFF; /* P50～P53のプルアップ回路を有効にする */
+   73 ex3_2.c        7        
+   74 ex3_2.c        8        PADDR = 0xFF; /* PA0～PA7を出力端子として設定する */
+   75 ex3_2.c        9        PADR = 0xFF; /* PA0～PA7の初期値を1に設定する */
+   76 ex3_2.c       10        
+   77 ex3_2.c       11        while (1) /* 無限ループ */
+   78 ex3_2.c       12        {
+   79 ex3_2.c       13           if (P5DR == 0xFD) /* ONスイッチだけを押したとき */
+   80 ex3_2.c       14           {
+   81 ex3_2.c       15              PADR = 0xFB; /* LED(D8)だけが発光する */
+   82 ex3_2.c       16           }
+   83 ex3_2.c       17           else if (P5DR == 0xFE) /* OFFスイッチだけを押したとき */
+   84 ex3_2.c       18           {
+   85 ex3_2.c       19              PADR = 0xF7; /* LED(D9)だけが発光する */
+   86 ex3_2.c       20           }
+   87 ex3_2.c       21           else /* それ以外のとき */
+   88 ex3_2.c       22           {
+   89 ex3_2.c       23              PADR = 0xFF; /* どちらのLEDも発光しない */
+   90 ex3_2.c       24           }
+   91 ex3_2.c       25        }
+   92 ex3_2.c       26     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  14:10:52  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000042 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000042 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000042 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        0 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        1 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:          5 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

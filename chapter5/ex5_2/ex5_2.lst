@@ -1,0 +1,137 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  19:22:20  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex5_2.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex5_2.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex5_2.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex5_2.c        3     #include "packet_definition.h" /* パケットの定義 */
+  165 ex5_2.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  175 ex5_2.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  228 ex5_2.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  264 ex5_2.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  333 ex5_2.c        8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  543 ex5_2.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  588 ex5_2.c       10     #include "utility_function.h" /* そのほかの関数 */
+  722 ex5_2.c       11     #include "ARP_function.h" /* ARPの関数 */
+  793 ex5_2.c       12     #include "text_packet_function.h" /* テキスト・データのパケットの関数 */
+  913 ex5_2.c       13     
+  914 ex5_2.c       14     void main(void)
+  915 ex5_2.c       15     {
+  916 ex5_2.c       16        unsigned short i;
+  917 ex5_2.c       17        unsigned char line;
+  918 ex5_2.c       18        unsigned char packet_type;
+  919 ex5_2.c       19        ARP_PACKET *arp_packet;
+  920 ex5_2.c       20        TEXT_PACKET *text_packet;
+  921 ex5_2.c       21        
+  922 ex5_2.c       22        H8_register_init(); /* H8/3067のレジスタの設定 */
+  923 ex5_2.c       23        LCD_init(); /* SC1602Bの初期化 */
+  924 ex5_2.c       24        NIC_init(); /* RTL8019ASの初期化 */
+  925 ex5_2.c       25        
+  926 ex5_2.c       26        /* 送信元IPアドレスの設定 */
+  927 ex5_2.c       27        src_IP[0] = 192;
+  928 ex5_2.c       28        src_IP[1] = 168;
+  929 ex5_2.c       29        src_IP[2] = 0;
+  930 ex5_2.c       30        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  931 ex5_2.c       31        
+  932 ex5_2.c       32        src_port = 20000; /* 送信元ポート番号の設定 */
+  933 ex5_2.c       33        
+  934 ex5_2.c       34        LCD_clear(); /* 表示クリア */
+  935 ex5_2.c       35        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  936 ex5_2.c       36        
+  937 ex5_2.c       37        text_buffer[16] = 0x00; /* テキスト・バッファの最後をナル文字にする */
+  938 ex5_2.c       38        line = 0; /* lineの初期値 */
+  939 ex5_2.c       39        
+  940 ex5_2.c       40        while (1) /* 無限ループ */
+  941 ex5_2.c       41        {
+  942 ex5_2.c       42           packet_type = 0; /* packet_typeを0にする */
+  943 ex5_2.c       43           
+  944 ex5_2.c       44           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+  945 ex5_2.c       45           {
+  946 ex5_2.c       46              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+  947 ex5_2.c       47              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  948 ex5_2.c       48                  /* ARPのパケットのとき */
+  949 ex5_2.c       49                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  950 ex5_2.c       50                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  951 ex5_2.c       51                  (arp_packet -> arp_operation == 1)
+  952 ex5_2.c       52                  /* ARPリクエストのとき */
+  953 ex5_2.c       53                 )
+  954 ex5_2.c       54              {
+  955 ex5_2.c       55                 packet_type = 'a'; /* packet_typeを'a'にする */
+  956 ex5_2.c       56              }
+  957 ex5_2.c       57              
+  958 ex5_2.c       58              text_packet = (TEXT_PACKET *)packet; /* packetをTEXT_PACKET構造体に当てはめる */
+  959 ex5_2.c       59              if ((text_packet -> eth_ethernet_type == 0x0800) && 
+  960 ex5_2.c       60                  /* IPのパケットのとき */
+  961 ex5_2.c       61                  (IP_compare(text_packet -> ip_dst_IP, src_IP) == 0) && 
+  962 ex5_2.c       62                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  963 ex5_2.c       63                  (text_packet -> ip_protocol == 17) && 
+  964 ex5_2.c       64                  /* UDPのパケットのとき */
+  965 ex5_2.c       65                  (text_packet -> udp_dst_port == src_port) && 
+  966 ex5_2.c       66                  /* パケットに記述されている宛先ポート番号が送信元ポート番号に一致したとき */
+  967 ex5_2.c       67                  (text_packet_error_check(packet) != 1)
+  968 ex5_2.c       68                  /* パケットにエラーがないとき */
+  969 ex5_2.c       69                 )
+  970 ex5_2.c       70              {
+  971 ex5_2.c       71                 packet_type = 't'; /* packet_typeを't'にする */
+  972 ex5_2.c       72              }
+  973 ex5_2.c       73           }
+  974 ex5_2.c       74           
+  975 ex5_2.c       75           switch (packet_type) /* packet_typeにしたがって処理を行う */
+  976 ex5_2.c       76           {
+  977 ex5_2.c       77              case 'a': /* packet_typeが'a'のとき */
+  978 ex5_2.c       78                 ARP_reply(packet); /* ARPリプライ */
+  979 ex5_2.c       79                 break;
+  980 ex5_2.c       80              case 't': /* packet_typeが't'のとき */
+  981 ex5_2.c       81                 text_packet = (TEXT_PACKET *)packet; /* packetをTEXT_PACKET構造体に当てはめる */
+  982 ex5_2.c       82                 for (i = 0; i < 16; i++)
+  983 ex5_2.c       83                 {
+  984 ex5_2.c       84                    text_buffer[i] = text_packet -> text_data[i];
+  985 ex5_2.c       85                    /* パケットに搭載されているテキスト・データをtext_bufferに格納する */
+  986 ex5_2.c       86                 }
+  987 ex5_2.c       87                 if (line == 0) /* lineが0のとき */
+  988 ex5_2.c       88                 {
+  989 ex5_2.c       89                    LCD_clear(); /* 表示クリア */
+  990 ex5_2.c       90                    LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  991 ex5_2.c       91                 }
+  992 ex5_2.c       92                 else if (line == 1) /* lineが1のとき */
+  993 ex5_2.c       93                 {
+  994 ex5_2.c       94                    LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+  995 ex5_2.c       95                 }
+  996 ex5_2.c       96                 LCD_print(text_buffer); /* 液晶ディスプレイにテキスト・バッファの文字列を表示する */
+  997 ex5_2.c       97                 line ^= 1; /* XOR演算によって，lineが0のときは1，lineが1のときは0にする */
+  998 ex5_2.c       98                 break;
+  999 ex5_2.c       99           }
+ 1000 ex5_2.c      100        }
+ 1001 ex5_2.c      101     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)15-Dec-2007  19:22:21  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000E42 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x0000012B Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000E42 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x0000012B Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000F6D Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       34 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        137 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

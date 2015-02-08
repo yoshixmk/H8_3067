@@ -1,0 +1,183 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  13:44:12  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex5_1.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex5_1.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex5_1.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex5_1.c        3     #include "packet_definition.h" /* パケットの定義 */
+  165 ex5_1.c        4     #include "global_variables.h" /* グローバル変数の定義 */
+  175 ex5_1.c        5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  228 ex5_1.c        6     #include "delay_function.h" /* 時間待ちの関数 */
+  264 ex5_1.c        7     #include "LCD_function.h" /* SC1602Bの関数 */
+  333 ex5_1.c        8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  543 ex5_1.c        9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  588 ex5_1.c       10     #include "utility_function.h" /* そのほかの関数 */
+  722 ex5_1.c       11     #include "ARP_function.h" /* ARPの関数 */
+  793 ex5_1.c       12     #include "text_packet_function.h" /* テキスト・データのパケットの関数 */
+  913 ex5_1.c       13     
+  914 ex5_1.c       14     void main(void)
+  915 ex5_1.c       15     {
+  916 ex5_1.c       16        unsigned short i;
+  917 ex5_1.c       17        char key, previous_key;
+  918 ex5_1.c       18        unsigned char on_switch, previous_on_switch;
+  919 ex5_1.c       19        unsigned char cursor, line;
+  920 ex5_1.c       20        unsigned char packet_type;
+  921 ex5_1.c       21        ARP_PACKET *arp_packet;
+  922 ex5_1.c       22        
+  923 ex5_1.c       23        H8_register_init(); /* H8/3067のレジスタの設定 */
+  924 ex5_1.c       24        LCD_init(); /* SC1602Bの初期化 */
+  925 ex5_1.c       25        NIC_init(); /* RTL8019ASの初期化 */
+  926 ex5_1.c       26        
+  927 ex5_1.c       27        /* 送信元IPアドレスの設定 */
+  928 ex5_1.c       28        src_IP[0] = 192;
+  929 ex5_1.c       29        src_IP[1] = 168;
+  930 ex5_1.c       30        src_IP[2] = 0;
+  931 ex5_1.c       31        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  932 ex5_1.c       32        
+  933 ex5_1.c       33        /* 宛先IPアドレスの設定 */
+  934 ex5_1.c       34        dst_IP[0] = 192;
+  935 ex5_1.c       35        dst_IP[1] = 168;
+  936 ex5_1.c       36        dst_IP[2] = 0;
+  937 ex5_1.c       37        dst_IP[3] = 2;
+  938 ex5_1.c       38        
+  939 ex5_1.c       39        src_port = 10000; /* 送信元ポート番号の設定 */
+  940 ex5_1.c       40        dst_port = 20000; /* 宛先ポート番号の設定 */
+  941 ex5_1.c       41        
+  942 ex5_1.c       42        LCD_clear(); /* 表示クリア */
+  943 ex5_1.c       43        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  944 ex5_1.c       44        
+  945 ex5_1.c       45        delay_ms(2000); /* 2000ms（2秒）の時間待ち */
+  946 ex5_1.c       46        
+  947 ex5_1.c       47        ARP_request(packet); /* ARPリクエスト */
+  948 ex5_1.c       48        
+  949 ex5_1.c       49        packet_type = 0; /* packet_typeを0にする */
+  950 ex5_1.c       50        do
+  951 ex5_1.c       51        {
+  952 ex5_1.c       52           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+  953 ex5_1.c       53           {
+  954 ex5_1.c       54              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+  955 ex5_1.c       55              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  956 ex5_1.c       56                  /* ARPのパケットのとき */
+  957 ex5_1.c       57                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  958 ex5_1.c       58                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  959 ex5_1.c       59                  (arp_packet -> arp_operation == 2)
+  960 ex5_1.c       60                  /* ARPリプライのとき */
+  961 ex5_1.c       61                 )
+  962 ex5_1.c       62              {
+  963 ex5_1.c       63                 for (i = 0; i < 6; i++)
+  964 ex5_1.c       64                 {
+  965 ex5_1.c       65                    dst_MAC[i] = arp_packet -> arp_src_MAC[i];
+  966 ex5_1.c       66                    /* パケットに記述されている送信元MACアドレスをdst_MACに格納する */
+  967 ex5_1.c       67                 }
+  968 ex5_1.c       68                 packet_type = 'a'; /* packet_typeを'a'にする */
+  969 ex5_1.c       69              }
+  970 ex5_1.c       70           }
+  971 ex5_1.c       71        } while (packet_type != 'a'); /* packet_typeが'a'になるまで待つ */
+  972 ex5_1.c       72        
+  973 ex5_1.c       73        src_ip_id = 0; /* src_ip_idの初期値 */
+  974 ex5_1.c       74        for (i = 0; i < 16; i++)
+  975 ex5_1.c       75        {
+  976 ex5_1.c       76           text_buffer[i] = ' '; /* テキスト・バッファを空白でクリアする */
+  977 ex5_1.c       77        }
+  978 ex5_1.c       78        text_buffer[16] = 0x00; /* テキスト・バッファの最後をナル文字にする */
+  979 ex5_1.c       79        cursor = 0; /* cursorの初期値 */
+  980 ex5_1.c       80        line = 0; /* lineの初期値 */
+  981 ex5_1.c       81        previous_key = 0; /* previous_keyの初期値 */
+  982 ex5_1.c       82        previous_on_switch = 1; /* previous_on_switchの初期値 */
+  983 ex5_1.c       83        
+  984 ex5_1.c       84        while (1) /* 無限ループ */
+  985 ex5_1.c       85        {
+  986 ex5_1.c       86           while (cursor < 16) /* cursorが16よりも小さいとき */
+  987 ex5_1.c       87           {
+  988 ex5_1.c       88              delay_ms(20);
+  989 ex5_1.c       89              /* 20msの時間待ちをはさむことで，チャタリングによるスイッチの誤検出を回避する */
+  990 ex5_1.c       90              
+  991 ex5_1.c       91              key = matrix_key_read(); /* 現在のキーをチェックする */
+  992 ex5_1.c       92              
+  993 ex5_1.c       93              if ((key != 0) && (key != previous_key))
+  994 ex5_1.c       94              /* 現在のキーが0ではなく，直前のキーとは異なるとき */
+  995 ex5_1.c       95              {
+  996 ex5_1.c       96                 if ((cursor == 0) && (line == 0)) /* cursorが0，lineが0のとき */
+  997 ex5_1.c       97                 {
+  998 ex5_1.c       98                    LCD_clear(); /* 表示クリア */
+  999 ex5_1.c       99                    LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+ 1000 ex5_1.c      100                 }
+ 1001 ex5_1.c      101                 else if ((cursor == 0) && (line == 1)) /* cursorが0，lineが1のとき */
+ 1002 ex5_1.c      102                 {
+ 1003 ex5_1.c      103                    LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+ 1004 ex5_1.c      104                 }
+ 1005 ex5_1.c      105                 LCD_display(key); /* 液晶ディスプレイに現在のキーを表示する */
+ 1006 ex5_1.c      106                 text_buffer[cursor] = key; /* keyをtext_bufferに格納する */
+ 1007 ex5_1.c      107                 cursor++; /* cursorをインクリメントする */
+ 1008 ex5_1.c      108              }
+ 1009 ex5_1.c      109              previous_key = key;
+ 1010 ex5_1.c      110              /* 現在のキーを，次のチェック時刻における直前のキーとして定義する */
+ 1011 ex5_1.c      111              
+ 1012 ex5_1.c      112              if ((P5DR & 0x02) == 0x00) /* 現在のONスイッチがオンのとき */
+ 1013 ex5_1.c      113              {
+ 1014 ex5_1.c      114                 on_switch = 0; /* on_switchを0にする */
+ 1015 ex5_1.c      115              }
+ 1016 ex5_1.c      116              else if ((P5DR & 0x02) == 0x02) /* 現在のONスイッチがオフのとき */
+ 1017 ex5_1.c      117              {
+ 1018 ex5_1.c      118                 on_switch = 1; /* on_switchを1にする */
+ 1019 ex5_1.c      119              }
+ 1020 ex5_1.c      120              
+ 1021 ex5_1.c      121              if ((on_switch == 0) && (on_switch != previous_on_switch))
+ 1022 ex5_1.c      122              /* 現在のONスイッチがオンで，直前のONスイッチの状態とは異なるとき */
+ 1023 ex5_1.c      123              {
+ 1024 ex5_1.c      124                 text_packet_send(packet); /* テキスト・データのパケットを送信する */
+ 1025 ex5_1.c      125                 src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1026 ex5_1.c      126                 for (i = 0; i < 16; i++)
+ 1027 ex5_1.c      127                 {
+ 1028 ex5_1.c      128                    text_buffer[i] = ' '; /* テキスト・バッファを空白でクリアする */
+ 1029 ex5_1.c      129                 }
+ 1030 ex5_1.c      130                 cursor = 0; /* cursorを0に戻す */
+ 1031 ex5_1.c      131                 line ^= 1; /* XOR演算によって，lineが0のときは1，lineが1のときは0にする */
+ 1032 ex5_1.c      132              }
+ 1033 ex5_1.c      133              previous_on_switch = on_switch;
+ 1034 ex5_1.c      134              /* 現在のONスイッチの状態を，次のチェック時刻におけるONスイッチの状態として定義する */
+ 1035 ex5_1.c      135           }
+ 1036 ex5_1.c      136           
+ 1037 ex5_1.c      137           /* cursorが16以上になったとき */
+ 1038 ex5_1.c      138           text_packet_send(packet); /* テキスト・データのパケットを送信する */
+ 1039 ex5_1.c      139           src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1040 ex5_1.c      140           for (i = 0; i < 16; i++)
+ 1041 ex5_1.c      141           {
+ 1042 ex5_1.c      142              text_buffer[i] = ' '; /* テキスト・バッファを空白でクリアする */
+ 1043 ex5_1.c      143           }
+ 1044 ex5_1.c      144           cursor = 0; /* cursorを0に戻す */
+ 1045 ex5_1.c      145           line ^= 1; /* XOR演算によって，lineが0のときは1，lineが1のときは0にする */
+ 1046 ex5_1.c      146        }
+ 1047 ex5_1.c      147     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  13:44:12  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000EE6 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x0000012B Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000EE6 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x0000012B Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00001011 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       34 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        143 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

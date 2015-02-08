@@ -1,0 +1,69 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)16-Oct-2014  11:35:19  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: sample.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 sample.c       1     #include <sci.h>
+  138 sample.c       2     
+  139 sample.c       3     #define P5DDR (*(volatile unsigned char *)0xEE004)
+  140 sample.c       4     #define PADDR (*(volatile unsigned char *)0xEE009)
+  141 sample.c       5     #define P5DR (*(volatile unsigned char *)0xFFFD4)
+  142 sample.c       6     #define PADR (*(volatile unsigned char *)0xFFFD9)
+  143 sample.c       7     #define P5PCR (*(volatile unsigned char *)0xEE03F)
+  144 sample.c       8     
+  145 sample.c       9     void main(void)
+  146 sample.c      10     {
+  147 sample.c      11       P5DDR = 0xF0;
+  148 sample.c      12       P5PCR = 0xFF;
+  149 sample.c      13     
+  150 sample.c      14       PADDR = 0xFF;
+  151 sample.c      15       PADR = 0xFF;
+  152 sample.c      16     
+  153 sample.c      17       sci_open();
+  154 sample.c      18       while(1)
+  155 sample.c      19       {
+  156 sample.c      20         if(P5DR == 0xFD){
+  157 sample.c      21           sci_puts("SW ON Pushed!!");
+  158 sample.c      22           PADR = 0xFB;
+  159 sample.c      23         }
+  160 sample.c      24         else if(P5DR == 0xFE){
+  161 sample.c      25           sci_puts("SW OFF Pushed!!");
+  162 sample.c      26           PADR = 0xF7;
+  163 sample.c      27         }
+  164 sample.c      28         else{
+  165 sample.c      29           PADR = 0xFF;
+  166 sample.c      30         }
+  167 sample.c      31       }
+  168 sample.c      32       sci_close();
+  169 sample.c      33     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)16-Oct-2014  11:35:19  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000106 Byte(s)
+CONSTANT SECTION(C):                                0x0000001F Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000000 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000106 Byte(s)
+TOTAL CONSTANT SECTION: 0x0000001F Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000000 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000125 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:        7 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:         25 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

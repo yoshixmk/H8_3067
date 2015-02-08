@@ -1,0 +1,13 @@
+    .cpu 300ha:20
+    .import $STACK
+    .import _main
+    .import _int_ms_timer
+    .section VECTOR, common
+    .data.l reset_start
+    .org H'00080
+    .data.l _int_ms_timer
+    .section P, code, align=2
+reset_start:
+    mov.l #($STACK), er7
+    jmp @_main
+    .end

@@ -1,0 +1,169 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=ex6_1.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input ex6_1
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output ex6_1.abs
+print ex6_1.map
+exit
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000063   H'00000064
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000063   H'00000064
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'0000194B   H'00001842
+                                                              ex6_1                              ex6_1                           
+                                  H'0000194C    -    H'00001973   H'00000028
+                                                              mvn3                               mvn3                            
+                                  H'00001974    -    H'00001995   H'00000022
+                                                              spregld3                           spregld3                        
+                                  H'00001996    -    H'000019BD   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'000019BE    -    H'000019D3   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'000019D3   H'000018D4
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+C                                 H'000019D4    -    H'000019E5   H'00000012
+                                                              ex6_1                              ex6_1                           
+
+* TOTAL ADDRESS *                 H'000019D4    -    H'000019E5   H'00000012
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'000FEF20    -    H'000FF2E7   H'000003C8
+                                                              ex6_1                              ex6_1                           
+
+* TOTAL ADDRESS *                 H'000FEF20    -    H'000FF2E7   H'000003C8
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $MVN$3                               H'0000194C           DAT
+                                  $sp_regld$3                          H'00001974           DAT
+                                  $sp_regsv$3                          H'00001996           DAT
+                                  $spregld2$3                          H'000019BE           DAT
+                                  _ARP_REQUEST_state                   H'0000135A           ENT
+                                  _ARP_reply                           H'00000AC2           ENT
+                                  _ARP_request                         H'000009C4           ENT
+                                  _H8_register_init                    H'0000010A           ENT
+                                  _INCOMING_state                      H'0000137E           ENT
+                                  _IP_compare                          H'0000094C           ENT
+                                  _IP_to_str                           H'000007F2           ENT
+                                  _LCD_clear                           H'000002B2           ENT
+                                  _LCD_control                         H'00000294           ENT
+                                  _LCD_display                         H'00000276           ENT
+                                  _LCD_init                            H'000002C8           ENT
+                                  _LCD_print                           H'00000332           ENT
+                                  _LCD_write                           H'0000023A           ENT
+                                  _MAC_to_str                          H'00000882           ENT
+                                  _NIC_init                            H'0000039C           ENT
+                                  _NIC_read                            H'0000034C           ENT
+                                  _NIC_write                           H'00000374           ENT
+                                  _OFFLINE_state                       H'000012EA           ENT
+                                  _ONLINE_state                        H'000013EC           ENT
+                                  _OUTGOING_state                      H'0000136C           ENT
+                                  _ad_buffer0                          H'000FF056           DAT
+                                  _ad_buffer1                          H'000FF0F6           DAT
+                                  _ad_buffer_flag                      H'000FF04C           DAT
+                                  _ad_counter                          H'000FF052           DAT
+                                  _anti_chattering_counter             H'000FF04E           DAT
+                                  _call_packet_error_check             H'00000D38           ENT
+                                  _call_packet_send                    H'00000B8A           ENT
+                                  _cursor                              H'000FF2DC           DAT
+                                  _da_buffer0                          H'000FF196           DAT
+                                  _da_buffer1                          H'000FF236           DAT
+                                  _da_buffer_flag                      H'000FF04D           DAT
+                                  _da_counter                          H'000FF054           DAT
+                                  _delay_ms                            H'00000204           ENT
+                                  _delay_us                            H'000001CE           ENT
+                                  _dst_IP                              H'000FEF2C           DAT
+                                  _dst_MAC                             H'000FEF30           DAT
+                                  _dst_port                            H'000FEF36           DAT
+                                  _key                                 H'000FF2D6           DAT
+                                  _main                                H'00001470           ENT
+                                  _matrix_key_read                     H'00000762           ENT
+                                  _off_switch                          H'000FF2DA           DAT
+                                  _on_switch                           H'000FF2D8           DAT
+                                  _ones_complement_sum                 H'0000097E           ENT
+                                  _packet                              H'000FEF3A           DAT
+                                  _packet_receive                      H'000005FA           ENT
+                                  _packet_send                         H'00000558           ENT
+                                  _phone_state                         H'000FF04A           DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     2
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  _previous_key                        H'000FF2D7           DAT
+                                  _previous_off_switch                 H'000FF2DB           DAT
+                                  _previous_on_switch                  H'000FF2D9           DAT
+                                  _sampling_8khz                       H'000010C8           ENT
+                                  _speech_packet_error_check           H'00001016           ENT
+                                  _speech_packet_send                  H'00000DEA           ENT
+                                  _speech_packet_send_flag             H'000FF04B           DAT
+                                  _src_IP                              H'000FEF20           DAT
+                                  _src_MAC                             H'000FEF24           DAT
+                                  _src_ip_id                           H'000FEF38           DAT
+                                  _src_port                            H'000FEF2A           DAT
+                                  _src_rtp_sequence_number             H'000FF2DE           DAT
+                                  _src_rtp_ssrc                        H'000FF2E4           DAT
+                                  _src_rtp_time_stamp                  H'000FF2E0           DAT
+                                  _str_IP                              H'000FF03A           DAT
+                                  _str_to_IP                           H'000008E0           ENT
+                                  _time_out_counter                    H'000FF050           DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

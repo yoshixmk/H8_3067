@@ -1,0 +1,23 @@
+H8S,H8/300 SERIES CROSS ASSEMBLER Ver. 2.0A Evaluation software
+Copyright (C) Hitachi, Ltd. 1994,1998
+Copyright (C) HITACHI MICROCOMPUTER SYSTEM LTD. 1994,1998
+Licensed Material of Hitachi, Ltd.
+  *****TOTAL ERRORS       0
+  *****TOTAL WARNINGS     0
+H SERIES LINKAGE EDITOR Ver. 5.3B Evaluation software
+Copyright (C) Hitachi, Ltd.1989,1998
+Copyright (C) HITACHI MICROCOMPUTER SYSTEM LTD. 1990,1998
+Licensed Material of Hitachi, Ltd.
+
+: input Start
+: input demo
+: library ..\TOOL\lib\C38HA.LIB
+: 
+: DEFINE  $STACK(0ffff20)
+: 
+: start VECTOR(0000),P,C(0100),B(0ffef20)
+: output demo.abs 
+: print demo.map 
+: exit 
+
+LINKAGE EDITOR COMPLETED

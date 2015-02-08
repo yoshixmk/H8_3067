@@ -1,0 +1,10 @@
+input Start
+input demo
+library ..\TOOL\lib\C38HA.LIB
+
+DEFINE  $STACK(0ffff20)
+
+start VECTOR(0000),P,C(0100),B(0ffef20)
+output demo.abs 
+print demo.map 
+exit 

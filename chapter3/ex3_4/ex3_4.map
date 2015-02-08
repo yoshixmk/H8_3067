@@ -1,0 +1,95 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=ex3_4.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input ex3_4
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output ex3_4.abs
+print ex3_4.map
+exit
+** 121 CANNOT FIND SECTION(B)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000003   H'00000004
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000003   H'00000004
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'0000030F   H'00000206
+                                                              ex3_4                              ex3_4                           
+                                  H'00000310    -    H'00000337   H'00000028
+                                                              mvn3                               mvn3                            
+                                  H'00000338    -    H'0000035F   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'00000360    -    H'00000375   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00000375   H'00000276
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+C                                 H'00000376    -    H'00000383   H'0000000E
+                                                              ex3_4                              ex3_4                           
+
+* TOTAL ADDRESS *                 H'00000376    -    H'00000383   H'0000000E
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $MVN$3                               H'00000310           DAT
+                                  $sp_regsv$3                          H'00000338           DAT
+                                  $spregld2$3                          H'00000360           DAT
+                                  _LCD_clear                           H'000001EE           ENT
+                                  _LCD_control                         H'000001D0           ENT
+                                  _LCD_display                         H'000001B2           ENT
+                                  _LCD_init                            H'00000204           ENT
+                                  _LCD_print                           H'0000026E           ENT
+                                  _LCD_write                           H'00000176           ENT
+                                  _delay_ms                            H'00000140           ENT
+                                  _delay_us                            H'0000010A           ENT
+                                  _main                                H'00000288           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

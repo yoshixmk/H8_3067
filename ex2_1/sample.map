@@ -1,0 +1,106 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=sample.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input sample
+library ..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output sample.abs
+print sample.map
+exit
+** 105 UNDEFINED EXTERNAL SYMBOL(startup._int_ms_timer)
+** 121 CANNOT FIND SECTION(C)
+** 121 CANNOT FIND SECTION(B)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000083   H'00000084
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000083   H'00000084
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'000003E1   H'000002D8
+                                                              sample                             sample                          
+                                  H'000003E2    -    H'00000409   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'0000040A    -    H'0000041F   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'0000041F   H'00000320
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $sp_regsv$3                          H'000003E2           DAT
+                                  $spregld2$3                          H'0000040A           DAT
+                                  _LCD_control                         H'000002B2           ENT
+                                  _LCD_display                         H'00000294           ENT
+                                  _LCD_init                            H'000002D0           ENT
+                                  _LCD_write                           H'00000268           ENT
+                                  _main                                H'00000332           ENT
+                                  _matrix_key_read                     H'000001DC           ENT
+                                  _ms_timer                            H'000001BA           ENT
+                                  _sci_close                           H'00000132           ENT
+                                  _sci_getc                            H'00000134           ENT
+                                  _sci_gets                            H'0000015C           ENT
+                                  _sci_open                            H'0000010A           ENT
+                                  _sci_putc                            H'0000017C           ENT
+                                  _sci_puts                            H'000001A2           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      *** LINKAGE EDITOR UNRESOLVED EXTERNAL REFERENCE LIST ***
+
+ FILE NAME   : startup.OBJ                                                    
+                                                                              
+
+ MODULE NAME : startup                         
+ UNIT NAME   : startup                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  _int_ms_timer                                          ***
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

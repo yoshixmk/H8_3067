@@ -1,0 +1,112 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=ex4_4.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input ex4_4
+library ..\..\TOOL\lib\C38HA.LIB
+define $STACK(0FFFF20)
+start VECTOR(000000), P, C(000100), B(0FFEF20)
+output ex4_4.abs
+print ex4_4.map
+exit
+** 121 CANNOT FIND SECTION(C)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000003   H'00000004
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000003   H'00000004
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'00000C5D   H'00000B54
+                                                              ex4_4                              ex4_4                           
+                                  H'00000C5E    -    H'00000C85   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'00000C86    -    H'00000C9B   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00000C9B   H'00000B9C
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'00FFEF20    -    H'00FFF033   H'00000114
+                                                              ex4_4                              ex4_4                           
+
+* TOTAL ADDRESS *                 H'00FFEF20    -    H'00FFF033   H'00000114
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $sp_regsv$3                          H'00000C5E           DAT
+                                  $spregld2$3                          H'00000C86           DAT
+                                  _ARP_reply                           H'00000A08           ENT
+                                  _ARP_request                         H'0000090A           ENT
+                                  _H8_register_init                    H'0000010A           ENT
+                                  _IP_compare                          H'00000892           ENT
+                                  _IP_to_str                           H'00000738           ENT
+                                  _LCD_clear                           H'00000236           ENT
+                                  _LCD_control                         H'00000218           ENT
+                                  _LCD_display                         H'000001FC           ENT
+                                  _LCD_init                            H'0000024A           ENT
+                                  _LCD_print                           H'000002B4           ENT
+                                  _LCD_write                           H'000001D2           ENT
+                                  _MAC_to_str                          H'000007C8           ENT
+                                  _NIC_init                            H'00000300           ENT
+                                  _NIC_read                            H'000002CE           ENT
+                                  _NIC_write                           H'000002EA           ENT
+                                  _delay_ms                            H'000001B4           ENT
+                                  _delay_us                            H'00000196           ENT
+                                  _dst_IP                              H'00FFEF2A           DAT
+                                  _dst_MAC                             H'00FFEF2E           DAT
+                                  _main                                H'00000B92           ENT
+                                  _matrix_key_read                     H'000006AC           ENT
+                                  _ones_complement_sum                 H'000008C4           ENT
+                                  _packet                              H'00FFEF34           DAT
+                                  _packet_receive                      H'00000544           ENT
+                                  _packet_send                         H'000004A2           ENT
+                                  _ping_reply                          H'00000AD0           ENT
+                                  _src_IP                              H'00FFEF20           DAT
+                                  _src_MAC                             H'00FFEF24           DAT
+                                  _str_to_IP                           H'00000826           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'00FFFF20

@@ -1,0 +1,519 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  12:10:00  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex6_1.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex6_1.c        1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 ex6_1.c        2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 ex6_1.c        3     #include "symbol_definition.h" /* 定数の定義 */
+  120 ex6_1.c        4     #include "packet_definition.h" /* パケットの定義 */
+  214 ex6_1.c        5     #include "global_variables.h" /* グローバル変数の定義 */
+  252 ex6_1.c        6     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  305 ex6_1.c        7     #include "delay_function.h" /* 時間待ちの関数 */
+  341 ex6_1.c        8     #include "LCD_function.h" /* SC1602Bの関数 */
+  410 ex6_1.c        9     #include "NIC_function.h" /* RTL8019ASの関数 */
+  620 ex6_1.c       10     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  665 ex6_1.c       11     #include "utility_function.h" /* そのほかの関数 */
+  799 ex6_1.c       12     #include "ARP_function.h" /* ARPの関数 */
+  870 ex6_1.c       13     #include "call_packet_function.h" /* 呼制御データのパケットの関数 */
+  986 ex6_1.c       14     #include "speech_packet_function.h" /* 音声データのパケットの関数 */
+ 1122 ex6_1.c       15     #include <machine.h> /* set_imask_ccr関数 */
+ 1229 ex6_1.c       16     
+ 1230 ex6_1.c       17     /* sampling_8khz関数は，タイマ割り込みが発生したときに呼び出される関数 */
+ 1231 ex6_1.c       18     #pragma interrupt(sampling_8khz)
+ 1232 ex6_1.c       19     void sampling_8khz(void)
+ 1233 ex6_1.c       20     {
+ 1234 ex6_1.c       21        TISRA &= 0xFE; /* IMFA0を0に戻す */
+ 1235 ex6_1.c       22        
+ 1236 ex6_1.c       23        switch (phone_state) /* phone_stateにしたがって処理を行う */
+ 1237 ex6_1.c       24        {
+ 1238 ex6_1.c       25           case OFFLINE : /* オフラインの状態 */
+ 1239 ex6_1.c       26              anti_chattering_counter++; /* anti_chattering_counterをインクリメントする */
+ 1240 ex6_1.c       27              if (anti_chattering_counter == 160) /* anti_chattering_counterが160になったとき */
+ 1241 ex6_1.c       28              {
+ 1242 ex6_1.c       29                 key = matrix_key_read(); /* 現在のキーをチェックする */
+ 1243 ex6_1.c       30                 if ((P5DR & 0x02) == 0x00) /* 現在のONスイッチがオンのとき */
+ 1244 ex6_1.c       31                 {
+ 1245 ex6_1.c       32                    on_switch = 0; /* on_switchを0にする */
+ 1246 ex6_1.c       33                 }
+ 1247 ex6_1.c       34                 else if ((P5DR & 0x02) == 0x02) /* 現在のONスイッチがオフのとき */
+ 1248 ex6_1.c       35                 {
+ 1249 ex6_1.c       36                    on_switch = 1; /* on_switchを1にする */
+ 1250 ex6_1.c       37                 }
+ 1251 ex6_1.c       38                 anti_chattering_counter = 0; /* anti_chattering_counterを0に戻す */
+ 1252 ex6_1.c       39              }
+ 1253 ex6_1.c       40              break;
+ 1254 ex6_1.c       41           case ARP_REQUEST : /* ARPリクエストの状態 */
+ 1255 ex6_1.c       42              time_out_counter++; /* time_out_counterをインクリメントする */
+ 1256 ex6_1.c       43              break;
+ 1257 ex6_1.c       44           case OUTGOING : /* 呼び出しの状態 */
+ 1258 ex6_1.c       45              time_out_counter++; /* time_out_counterをインクリメントする */
+ 1259 ex6_1.c       46              break;
+ 1260 ex6_1.c       47           case INCOMING : /* 着信の状態 */
+ 1261 ex6_1.c       48              time_out_counter++; /* time_out_counterをインクリメントする */
+ 1262 ex6_1.c       49              if ((time_out_counter & 0x2000) == 0) /* (time_out_counter & 0x2000)が0のとき */
+ 1263 ex6_1.c       50              {
+ 1264 ex6_1.c       51                 PADR = 0x7F;
+ 1265 ex6_1.c       52                 /* PA2は1（LED(D8)は発光しない），PA3は1（LED(D9)は発光しない），PA4は1（ブザーは5V） */
+ 1266 ex6_1.c       53              }
+ 1267 ex6_1.c       54              else /* (time_out_counter & 0x2000)が1のとき */
+ 1268 ex6_1.c       55              {
+ 1269 ex6_1.c       56                 if ((time_out_counter & 0x0200) == 0) /* (time_out_counter & 0x0200)が0のとき */
+ 1270 ex6_1.c       57                 {
+ 1271 ex6_1.c       58                    if ((time_out_counter & 0x0008) == 0) /* (time_out_counter & 0x0008)が0のとき */
+ 1272 ex6_1.c       59                    {
+ 1273 ex6_1.c       60                       PADR = 0x7B;
+ 1274 ex6_1.c       61                       /* PA2は0（LED(D8)は発光する），PA3は1（LED(D9)は発光しない），PA4は1（ブザーは5V） */
+ 1275 ex6_1.c       62                    }
+ 1276 ex6_1.c       63                    else /* (time_out_counter & 0x0008)が1のとき */
+ 1277 ex6_1.c       64                    {
+ 1278 ex6_1.c       65                       PADR = 0x6B;
+ 1279 ex6_1.c       66                       /* PA2は0（LED(D8)は発光する），PA3は1（LED(D9)は発光しない），PA4は0（ブザーは0V） */
+ 1280 ex6_1.c       67                    }
+ 1281 ex6_1.c       68                 }
+ 1282 ex6_1.c       69                 else /* (time_out_counter & 0x0200)が1のとき */
+ 1283 ex6_1.c       70                 {
+ 1284 ex6_1.c       71                    PADR = 0x77;
+ 1285 ex6_1.c       72                    /* PA2は1（LED(D8)は発光しない），PA3は0（LED(D9)は発光する），PA4は1（ブザーは5V） */
+ 1286 ex6_1.c       73                 }
+ 1287 ex6_1.c       74              }
+ 1288 ex6_1.c       75              
+ 1289 ex6_1.c       76              anti_chattering_counter++; /* anti_chattering_counterをインクリメントする */
+ 1290 ex6_1.c       77              if (anti_chattering_counter == 160) /* anti_chattering_counterが160になったとき */
+ 1291 ex6_1.c       78              {
+ 1292 ex6_1.c       79                 if ((P5DR & 0x02) == 0x00) /* 現在のONスイッチがオンのとき */
+ 1293 ex6_1.c       80                 {
+ 1294 ex6_1.c       81                    on_switch = 0; /* on_switchを0にする */
+ 1295 ex6_1.c       82                 }
+ 1296 ex6_1.c       83                 else if ((P5DR & 0x02) == 0x02) /* 現在のONスイッチがオフのとき */
+ 1297 ex6_1.c       84                 {
+ 1298 ex6_1.c       85                    on_switch = 1; /* on_switchを1にする */
+ 1299 ex6_1.c       86                 }
+ 1300 ex6_1.c       87                 anti_chattering_counter = 0; /* anti_chattering_counterを0に戻す */
+ 1301 ex6_1.c       88              }
+ 1302 ex6_1.c       89              break;
+ 1303 ex6_1.c       90           case ONLINE : /* オンラインの状態 */
+ 1304 ex6_1.c       91              ADCSR |= 0x20; /* ADSTを1にしてA-D変換をスタートさせる */
+ 1305 ex6_1.c       92              while ((ADCSR & 0x80) == 0x00) /* ADFが1になるのを待つ */
+ 1306 ex6_1.c       93              {
+ 1307 ex6_1.c       94                 /* A-D変換が完了するとADFは1になる */
+ 1308 ex6_1.c       95              }
+ 1309 ex6_1.c       96              ADCSR &= 0x7F; /* ADFを0に戻す */
+ 1310 ex6_1.c       97              
+ 1311 ex6_1.c       98              if (ad_buffer_flag == 0) /* ad_buffer_flagが0のとき */
+ 1312 ex6_1.c       99              {
+ 1313 ex6_1.c      100                 ad_buffer0[ad_counter] = (unsigned char)(ADDRA >> 8);
+ 1314 ex6_1.c      101                 /* ADDRAの上位8bitをad_buffer0に格納する */
+ 1315 ex6_1.c      102              }
+ 1316 ex6_1.c      103              else if (ad_buffer_flag == 1) /* ad_buffer_flagが1のとき */
+ 1317 ex6_1.c      104              {
+ 1318 ex6_1.c      105                 ad_buffer1[ad_counter] = (unsigned char)(ADDRA >> 8);
+ 1319 ex6_1.c      106                 /* ADDRAの上位8bitをad_buffer1に格納する */
+ 1320 ex6_1.c      107              }
+ 1321 ex6_1.c      108              
+ 1322 ex6_1.c      109              ad_counter++; /* ad_counterをインクリメントする */
+ 1323 ex6_1.c      110              if (ad_counter == 160) /* ad_counterが160になったとき */
+ 1324 ex6_1.c      111              {
+ 1325 ex6_1.c      112                 speech_packet_send_flag = 1;
+ 1326 ex6_1.c      113                 /* speech_packet_send_flagを1にする */
+ 1327 ex6_1.c      114                 
+ 1328 ex6_1.c      115                 ad_buffer_flag ^= 1;
+ 1329 ex6_1.c      116                 /* XOR演算によって，ad_buffer_flagが0のときは1，ad_buffer_flagが1のときは0にする */
+ 1330 ex6_1.c      117                 
+ 1331 ex6_1.c      118                 ad_counter = 0;
+ 1332 ex6_1.c      119                 /* ad_counterを0に戻す */
+ 1333 ex6_1.c      120              }
+ 1334 ex6_1.c      121              
+ 1335 ex6_1.c      122              if (da_buffer_flag == 0) /* da_buffer_flagが0のとき */
+ 1336 ex6_1.c      123              {
+ 1337 ex6_1.c      124                 DADR0 = da_buffer0[da_counter];
+ 1338 ex6_1.c      125                 /* da_buffer0に格納されている音声データをDA0に出力する */
+ 1339 ex6_1.c      126              }
+ 1340 ex6_1.c      127              else if (da_buffer_flag == 1) /* da_buffer_flagが1のとき */
+ 1341 ex6_1.c      128              {
+ 1342 ex6_1.c      129                 DADR0 = da_buffer1[da_counter];
+ 1343 ex6_1.c      130                 /* da_buffer1に格納されている音声データをDA0に出力する */
+ 1344 ex6_1.c      131              }
+ 1345 ex6_1.c      132              
+ 1346 ex6_1.c      133              da_counter++; /* da_counterをインクリメントする */
+ 1347 ex6_1.c      134              if (da_counter == 160) /* da_counterが160になったとき */
+ 1348 ex6_1.c      135              {
+ 1349 ex6_1.c      136                 da_buffer_flag ^= 1;
+ 1350 ex6_1.c      137                 /* XOR演算によって，da_buffer_flagが0のときは1，da_buffer_flagが1のときは0にする */
+ 1351 ex6_1.c      138                 
+ 1352 ex6_1.c      139                 da_counter = 0;
+ 1353 ex6_1.c      140                 /* da_counterを0に戻す */
+ 1354 ex6_1.c      141              }
+ 1355 ex6_1.c      142              
+ 1356 ex6_1.c      143              anti_chattering_counter++; /* anti_chattering_counterをインクリメントする */
+ 1357 ex6_1.c      144              if (anti_chattering_counter == 160) /* anti_chattering_counterが160になったとき */
+ 1358 ex6_1.c      145              {
+ 1359 ex6_1.c      146                 if ((P5DR & 0x01) == 0x00) /* 現在のOFFスイッチがオンのとき */
+ 1360 ex6_1.c      147                 {
+ 1361 ex6_1.c      148                    off_switch = 0; /* off_switchを0にする */
+ 1362 ex6_1.c      149                 }
+ 1363 ex6_1.c      150                 else if ((P5DR & 0x01) == 0x01) /* 現在のOFFスイッチがオフのとき */
+ 1364 ex6_1.c      151                 {
+ 1365 ex6_1.c      152                    off_switch = 1; /* off_switchを1にする */
+ 1366 ex6_1.c      153                 }
+ 1367 ex6_1.c      154                 anti_chattering_counter = 0; /* anti_chattering_counterを0に戻す */
+ 1368 ex6_1.c      155              }
+ 1369 ex6_1.c      156              break;
+ 1370 ex6_1.c      157        }
+ 1371 ex6_1.c      158     }
+ 1372 ex6_1.c      159     
+ 1373 ex6_1.c      160     void OFFLINE_state(void)
+ 1374 ex6_1.c      161     {
+ 1375 ex6_1.c      162        unsigned short i;
+ 1376 ex6_1.c      163        char str_to[] = "Call To"; /* 液晶ディスプレイに表示する文字列 */
+ 1377 ex6_1.c      164        
+ 1378 ex6_1.c      165        phone_state = OFFLINE; /* phone_stateをOFFLINEにする */
+ 1379 ex6_1.c      166        anti_chattering_counter = 0; /* anti_chattering_counterの初期値 */
+ 1380 ex6_1.c      167        cursor = 0; /* cursorの初期値 */
+ 1381 ex6_1.c      168        for (i = 0; i < 16; i++)
+ 1382 ex6_1.c      169        {
+ 1383 ex6_1.c      170           str_IP[i] = ' '; /* str_IPを空白でクリアする */
+ 1384 ex6_1.c      171        }
+ 1385 ex6_1.c      172        
+ 1386 ex6_1.c      173        PADR = 0x7F; /* PA2は1（LED(D8)は発光しない），PA3は1（LED(D9)は発光しない），PA4は1（ブザーは5V） */
+ 1387 ex6_1.c      174        LCD_clear(); /* 表示クリア */
+ 1388 ex6_1.c      175        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+ 1389 ex6_1.c      176        LCD_print(str_to); /* 液晶ディスプレイにstr_toを表示する */
+ 1390 ex6_1.c      177        LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+ 1391 ex6_1.c      178     }
+ 1392 ex6_1.c      179     
+ 1393 ex6_1.c      180     void ARP_REQUEST_state(void)
+ 1394 ex6_1.c      181     {
+ 1395 ex6_1.c      182        phone_state = ARP_REQUEST; /* phone_stateをARP_REQUESTにする */
+ 1396 ex6_1.c      183        time_out_counter = 0; /* time_out_counterの初期値 */
+ 1397 ex6_1.c      184     }
+ 1398 ex6_1.c      185     
+ 1399 ex6_1.c      186     void OUTGOING_state(void)
+ 1400 ex6_1.c      187     {
+ 1401 ex6_1.c      188        phone_state = OUTGOING; /* phone_stateをOUTGOINGにする */
+ 1402 ex6_1.c      189        time_out_counter = 0; /* time_out_counterの初期値 */
+ 1403 ex6_1.c      190     }
+ 1404 ex6_1.c      191     
+ 1405 ex6_1.c      192     void INCOMING_state(void)
+ 1406 ex6_1.c      193     {
+ 1407 ex6_1.c      194        char str_from[] = "Call From"; /* 液晶ディスプレイに表示する文字列 */
+ 1408 ex6_1.c      195        
+ 1409 ex6_1.c      196        phone_state = INCOMING; /* phone_stateをINCOMINGにする */
+ 1410 ex6_1.c      197        anti_chattering_counter = 0; /* anti_chattering_counterの初期値 */
+ 1411 ex6_1.c      198        time_out_counter = 0; /* time_out_counterの初期値 */
+ 1412 ex6_1.c      199        
+ 1413 ex6_1.c      200        LCD_clear(); /* 表示クリア */
+ 1414 ex6_1.c      201        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+ 1415 ex6_1.c      202        LCD_print(str_from); /* 液晶ディスプレイにstr_fromを表示する */
+ 1416 ex6_1.c      203        LCD_control(0xC0); /* カーソルを1行目の先頭に移動する */
+ 1417 ex6_1.c      204        IP_to_str(dst_IP, str_IP); /* dst_IPをstr_IP（文字列）に変換する */
+ 1418 ex6_1.c      205        LCD_print(str_IP); /* 液晶ディスプレイにstr_IPを表示する */
+ 1419 ex6_1.c      206     }
+ 1420 ex6_1.c      207     
+ 1421 ex6_1.c      208     void ONLINE_state(void)
+ 1422 ex6_1.c      209     {
+ 1423 ex6_1.c      210        unsigned short i;
+ 1424 ex6_1.c      211        
+ 1425 ex6_1.c      212        phone_state = ONLINE; /* phone_stateをONLINEにする */
+ 1426 ex6_1.c      213        anti_chattering_counter = 0; /* anti_chattering_counterの初期値 */
+ 1427 ex6_1.c      214        time_out_counter = 0; /* time_out_counterの初期値 */
+ 1428 ex6_1.c      215        speech_packet_send_flag = 0; /* speech_packet_send_flagの初期値 */
+ 1429 ex6_1.c      216        ad_buffer_flag = 0; /* ad_buffer_flagの初期値 */
+ 1430 ex6_1.c      217        da_buffer_flag = 0; /* da_buffer_flagの初期値 */
+ 1431 ex6_1.c      218        ad_counter = 0; /* ad_counterの初期値 */
+ 1432 ex6_1.c      219        da_counter = 0; /* da_counterの初期値 */
+ 1433 ex6_1.c      220        for (i = 0; i < 160; i++)
+ 1434 ex6_1.c      221        {
+ 1435 ex6_1.c      222           da_buffer0[i] = 128; /* da_buffer0の初期値（音声データのオフセットは128） */
+ 1436 ex6_1.c      223           da_buffer1[i] = 128; /* da_buffer1の初期値（音声データのオフセットは128） */
+ 1437 ex6_1.c      224        }
+ 1438 ex6_1.c      225        src_rtp_sequence_number = 0; /* src_rtp_sequence_numberの初期値 */
+ 1439 ex6_1.c      226        src_rtp_time_stamp = 0; /* src_rtp_time_stampの初期値 */
+ 1440 ex6_1.c      227        src_rtp_ssrc = 0; /* src_rtp_ssrcの初期値 */
+ 1441 ex6_1.c      228        PADR = 0x7F; /* PA2は1（LED(D8)は発光しない），PA3は1（LED(D9)は発光しない），PA4は1（ブザーは5V） */
+ 1442 ex6_1.c      229     }
+ 1443 ex6_1.c      230     
+ 1444 ex6_1.c      231     void main(void)
+ 1445 ex6_1.c      232     {
+ 1446 ex6_1.c      233        unsigned short i;
+ 1447 ex6_1.c      234        unsigned char packet_type;
+ 1448 ex6_1.c      235        ARP_PACKET *arp_packet;
+ 1449 ex6_1.c      236        CALL_PACKET *call_packet;
+ 1450 ex6_1.c      237        SPEECH_PACKET *speech_packet;
+ 1451 ex6_1.c      238        
+ 1452 ex6_1.c      239        set_imask_ccr(0); /* H8/3067を割り込みが受け付けられる状態にする */
+ 1453 ex6_1.c      240        
+ 1454 ex6_1.c      241        H8_register_init(); /* H8/3067のレジスタの設定 */
+ 1455 ex6_1.c      242        LCD_init(); /* SC1602Bの初期化 */
+ 1456 ex6_1.c      243        NIC_init(); /* RTL8019ASの初期化 */
+ 1457 ex6_1.c      244        
+ 1458 ex6_1.c      245        /* 送信元IPアドレスの設定 */
+ 1459 ex6_1.c      246        src_IP[0] = 192;
+ 1460 ex6_1.c      247        src_IP[1] = 168;
+ 1461 ex6_1.c      248        src_IP[2] = 0;
+ 1462 ex6_1.c      249        src_IP[3] = 100 + (P2DR & 0x07); /* ディップ・スイッチによって送信元IPアドレスを設定する */
+ 1463 ex6_1.c      250        
+ 1464 ex6_1.c      251        src_ip_id = 0; /* src_ip_idの初期値 */
+ 1465 ex6_1.c      252        
+ 1466 ex6_1.c      253        key = 0; /* keyの初期値 */
+ 1467 ex6_1.c      254        previous_key = 0; /* previous_keyの初期値 */
+ 1468 ex6_1.c      255        on_switch = 1; /* on_switchの初期値 */
+ 1469 ex6_1.c      256        previous_on_switch = 1; /* previous_on_switchの初期値 */
+ 1470 ex6_1.c      257        off_switch = 1; /* off_switchの初期値 */
+ 1471 ex6_1.c      258        previous_off_switch = 1; /* previous_off_switchの初期値 */
+ 1472 ex6_1.c      259        
+ 1473 ex6_1.c      260        OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1474 ex6_1.c      261        
+ 1475 ex6_1.c      262        TISRA |= 0x10; /* IMIEA0を1に設定し，タイマ割り込みを有効にする */
+ 1476 ex6_1.c      263        TSTR |= 0x01; /* STR0を1にしてタイマ0をスタートさせる */
+ 1477 ex6_1.c      264        
+ 1478 ex6_1.c      265        while (1) /* 無限ループ */
+ 1479 ex6_1.c      266        {
+ 1480 ex6_1.c      267           packet_type = 0; /* packet_typeを0にする */
+ 1481 ex6_1.c      268           
+ 1482 ex6_1.c      269           if (packet_receive(packet) != 1) /* パケットを受信したとき */
+ 1483 ex6_1.c      270           {
+ 1484 ex6_1.c      271              arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+ 1485 ex6_1.c      272              if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+ 1486 ex6_1.c      273                  /* ARPのパケットのとき */
+ 1487 ex6_1.c      274                  (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0)
+ 1488 ex6_1.c      275                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1489 ex6_1.c      276                 )
+ 1490 ex6_1.c      277              {
+ 1491 ex6_1.c      278                 packet_type = 'a'; /* packet_typeを'a'にする */
+ 1492 ex6_1.c      279              }
+ 1493 ex6_1.c      280              
+ 1494 ex6_1.c      281              call_packet = (CALL_PACKET *)packet; /* packetをCALL_PACKET構造体に当てはめる */
+ 1495 ex6_1.c      282              if ((call_packet -> eth_ethernet_type == 0x0800) && 
+ 1496 ex6_1.c      283                  /* IPのパケットのとき */
+ 1497 ex6_1.c      284                  (IP_compare(call_packet -> ip_dst_IP, src_IP) == 0) && 
+ 1498 ex6_1.c      285                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1499 ex6_1.c      286                  (call_packet -> ip_protocol == 17) && 
+ 1500 ex6_1.c      287                  /* UDPのパケットのとき */
+ 1501 ex6_1.c      288                  (call_packet -> udp_dst_port == 10000) && 
+ 1502 ex6_1.c      289                  /* パケットに記述されている宛先ポート番号が10000番であるとき */
+ 1503 ex6_1.c      290                  (call_packet_error_check(packet) != 1)
+ 1504 ex6_1.c      291                  /* パケットにエラーがないとき */
+ 1505 ex6_1.c      292                 )
+ 1506 ex6_1.c      293              {
+ 1507 ex6_1.c      294                 packet_type = 'c'; /* packet_typeを'c'にする */
+ 1508 ex6_1.c      295              }
+ 1509 ex6_1.c      296              
+ 1510 ex6_1.c      297              speech_packet = (SPEECH_PACKET *)packet; /* packetをSPEECH_PACKET構造体に当てはめる */
+ 1511 ex6_1.c      298              if ((speech_packet -> eth_ethernet_type == 0x0800) && 
+ 1512 ex6_1.c      299                  /* IPのパケットのとき */
+ 1513 ex6_1.c      300                  (IP_compare(speech_packet -> ip_dst_IP, src_IP) == 0) && 
+ 1514 ex6_1.c      301                  /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1515 ex6_1.c      302                  (speech_packet -> ip_protocol == 17) && 
+ 1516 ex6_1.c      303                  /* UDPのパケットのとき */
+ 1517 ex6_1.c      304                  (speech_packet -> udp_dst_port == 20000) && 
+ 1518 ex6_1.c      305                  /* パケットに記述されている宛先ポート番号が20000番であるとき */
+ 1519 ex6_1.c      306                  (speech_packet_error_check(packet) != 1)
+ 1520 ex6_1.c      307                  /* パケットにエラーがないとき */
+ 1521 ex6_1.c      308                 )
+ 1522 ex6_1.c      309              {
+ 1523 ex6_1.c      310                 packet_type = 's'; /* packet_typeを's'にする */
+ 1524 ex6_1.c      311              }
+ 1525 ex6_1.c      312           }
+ 1526 ex6_1.c      313           
+ 1527 ex6_1.c      314           switch (packet_type) /* packet_typeにしたがって処理を行う */
+ 1528 ex6_1.c      315           {
+ 1529 ex6_1.c      316              case 'a': /* packet_typeが'a'のとき */
+ 1530 ex6_1.c      317                 arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+ 1531 ex6_1.c      318                 switch (arp_packet -> arp_operation) /* arp_operationにしたがって処理を行う */
+ 1532 ex6_1.c      319                 {
+ 1533 ex6_1.c      320                    case 1 : /* ARPリクエストのとき */
+ 1534 ex6_1.c      321                       ARP_reply(packet); /* ARPリプライ */
+ 1535 ex6_1.c      322                       break;
+ 1536 ex6_1.c      323                    case 2 : /* ARPリプライのとき */
+ 1537 ex6_1.c      324                       for (i = 0; i < 6; i++)
+ 1538 ex6_1.c      325                       {
+ 1539 ex6_1.c      326                          dst_MAC[i] = arp_packet -> arp_src_MAC[i];
+ 1540 ex6_1.c      327                          /* パケットに記述されている送信元MACアドレスをdst_MACに格納する */
+ 1541 ex6_1.c      328                       }
+ 1542 ex6_1.c      329                       src_port = 10000; /* 送信元ポート番号の設定 */
+ 1543 ex6_1.c      330                       dst_port = 10000; /* 宛先ポート番号の設定 */
+ 1544 ex6_1.c      331                       call_packet_send(packet, CONNECT_REQUEST); /* 接続リクエストを送信する */
+ 1545 ex6_1.c      332                       src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1546 ex6_1.c      333                       OUTGOING_state(); /* 呼び出しの状態に遷移する */
+ 1547 ex6_1.c      334                       break;
+ 1548 ex6_1.c      335                 }
+ 1549 ex6_1.c      336                 break;
+ 1550 ex6_1.c      337              case 'c': /* packet_typeが'c'のとき */
+ 1551 ex6_1.c      338                 call_packet = (CALL_PACKET *)packet; /* packetをCALL_PACKET構造体に当てはめる */
+ 1552 ex6_1.c      339                 switch (call_packet -> call_type) /* call_typeにしたがって処理を行う */
+ 1553 ex6_1.c      340                 {
+ 1554 ex6_1.c      341                    case CONNECT_REQUEST : /* 接続リクエストのとき */
+ 1555 ex6_1.c      342                       for (i = 0; i < 4; i++)
+ 1556 ex6_1.c      343                       {
+ 1557 ex6_1.c      344                          dst_IP[i] = call_packet -> ip_src_IP[i];
+ 1558 ex6_1.c      345                          /* パケットに記述されている送信元IPアドレスをdst_IPに格納する */
+ 1559 ex6_1.c      346                       }
+ 1560 ex6_1.c      347                       for (i = 0; i < 6; i++)
+ 1561 ex6_1.c      348                       {
+ 1562 ex6_1.c      349                          dst_MAC[i] = call_packet -> eth_src_MAC[i];
+ 1563 ex6_1.c      350                          /* パケットに記述されている送信元MACアドレスをdst_MACに格納する */
+ 1564 ex6_1.c      351                       }
+ 1565 ex6_1.c      352                       INCOMING_state(); /* 着信の状態に遷移する */
+ 1566 ex6_1.c      353                       break;
+ 1567 ex6_1.c      354                    case CONNECT_REPLY : /* 接続リプライのとき */
+ 1568 ex6_1.c      355                       ONLINE_state(); /* オンラインの状態に遷移する */
+ 1569 ex6_1.c      356                       break;
+ 1570 ex6_1.c      357                    case DISCONNECT_REQUEST : /* 切断リクエストのとき */
+ 1571 ex6_1.c      358                       src_port = 10000; /* 送信元ポート番号の設定 */
+ 1572 ex6_1.c      359                       dst_port = 10000; /* 宛先ポート番号の設定 */
+ 1573 ex6_1.c      360                       call_packet_send(packet, DISCONNECT_REPLY); /* 切断リプライを送信する */
+ 1574 ex6_1.c      361                       src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1575 ex6_1.c      362                       OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1576 ex6_1.c      363                       break;
+ 1577 ex6_1.c      364                    case DISCONNECT_REPLY : /* 切断リプライのとき */
+ 1578 ex6_1.c      365                       break;
+ 1579 ex6_1.c      366                 }
+ 1580 ex6_1.c      367                 break;
+ 1581 ex6_1.c      368              case 's': /* packet_typeが's'のとき */
+ 1582 ex6_1.c      369                 speech_packet = (SPEECH_PACKET *)packet; /* packetをSPEECH_PACKET構造体に当てはめる */
+ 1583 ex6_1.c      370                 if (da_buffer_flag == 0) /* da_buffer_flagが0のとき */
+ 1584 ex6_1.c      371                 {
+ 1585 ex6_1.c      372                    for (i = 0; i < 160; i++)
+ 1586 ex6_1.c      373                    {
+ 1587 ex6_1.c      374                       da_buffer1[i] = speech_packet -> speech_data[i];
+ 1588 ex6_1.c      375                       /* パケットに搭載されている音声データをda_buffer1に格納する */
+ 1589 ex6_1.c      376                    }
+ 1590 ex6_1.c      377                 }
+ 1591 ex6_1.c      378                 else if (da_buffer_flag == 1) /* da_buffer_flagが1のとき */
+ 1592 ex6_1.c      379                 {
+ 1593 ex6_1.c      380                    for (i = 0; i < 160; i++)
+ 1594 ex6_1.c      381                    {
+ 1595 ex6_1.c      382                       da_buffer0[i] = speech_packet -> speech_data[i];
+ 1596 ex6_1.c      383                       /* パケットに搭載されている音声データをda_buffer0に格納する */
+ 1597 ex6_1.c      384                    }
+ 1598 ex6_1.c      385                 }
+ 1599 ex6_1.c      386                 break;
+ 1600 ex6_1.c      387           }
+ 1601 ex6_1.c      388           
+ 1602 ex6_1.c      389           switch (phone_state) /* phone_stateにしたがって処理を行う */
+ 1603 ex6_1.c      390           {
+ 1604 ex6_1.c      391              case OFFLINE : /* オフラインの状態 */
+ 1605 ex6_1.c      392                 if ((key != 0) && (key != previous_key))
+ 1606 ex6_1.c      393                 /* 現在のキーが0ではなく，直前のキーとは異なるとき */
+ 1607 ex6_1.c      394                 {
+ 1608 ex6_1.c      395                    if ((key == '#') || (cursor >= 16))
+ 1609 ex6_1.c      396                    /* 現在のキーが'#'，または，cursorが16以上のとき */
+ 1610 ex6_1.c      397                    {
+ 1611 ex6_1.c      398                       OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1612 ex6_1.c      399                    }
+ 1613 ex6_1.c      400                    else
+ 1614 ex6_1.c      401                    {
+ 1615 ex6_1.c      402                       LCD_display(key); /* 液晶ディスプレイに現在のキーを表示する */
+ 1616 ex6_1.c      403                       str_IP[cursor] = key; /* keyをstr_IPに格納する */
+ 1617 ex6_1.c      404                       cursor++; /* cursorをインクリメントする */
+ 1618 ex6_1.c      405                    }
+ 1619 ex6_1.c      406                 }
+ 1620 ex6_1.c      407                 previous_key = key;
+ 1621 ex6_1.c      408                 /* 現在のキーを，次のチェック時刻における直前のキーとして定義する */
+ 1622 ex6_1.c      409                 
+ 1623 ex6_1.c      410                 if ((on_switch == 0) && (on_switch != previous_on_switch))
+ 1624 ex6_1.c      411                 /* 現在のONスイッチがオンで，直前のONスイッチの状態とは異なるとき */
+ 1625 ex6_1.c      412                 {
+ 1626 ex6_1.c      413                    if (str_to_IP(str_IP, dst_IP) != 1)
+ 1627 ex6_1.c      414                    /* str_IP（IPアドレスの文字列）をdst_IPに正しく変換できたとき */
+ 1628 ex6_1.c      415                    {
+ 1629 ex6_1.c      416                       ARP_request(packet); /* ARPリクエスト */
+ 1630 ex6_1.c      417                       ARP_REQUEST_state(); /* ARPリクエストの状態に遷移する */
+ 1631 ex6_1.c      418                    }
+ 1632 ex6_1.c      419                    else
+ 1633 ex6_1.c      420                    {
+ 1634 ex6_1.c      421                       OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1635 ex6_1.c      422                    }
+ 1636 ex6_1.c      423                 }
+ 1637 ex6_1.c      424                 previous_on_switch = on_switch;
+ 1638 ex6_1.c      425                 /* 現在のONスイッチの状態を，次のチェック時刻におけるONスイッチの状態として定義する */
+ 1639 ex6_1.c      426                 break;
+ 1640 ex6_1.c      427              case ARP_REQUEST : /* ARPリクエストの状態 */
+ 1641 ex6_1.c      428                 if (time_out_counter == 0xFFFF) /* タイムアウトのとき */
+ 1642 ex6_1.c      429                 {
+ 1643 ex6_1.c      430                    OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1644 ex6_1.c      431                 }
+ 1645 ex6_1.c      432                 break;
+ 1646 ex6_1.c      433              case OUTGOING : /* 呼び出しの状態 */
+ 1647 ex6_1.c      434                 if (time_out_counter == 0xFFFF) /* タイムアウトのとき */
+ 1648 ex6_1.c      435                 {
+ 1649 ex6_1.c      436                    OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1650 ex6_1.c      437                 }
+ 1651 ex6_1.c      438                 break;
+ 1652 ex6_1.c      439              case INCOMING : /* 着信の状態 */
+ 1653 ex6_1.c      440                 if (time_out_counter == 0xFFFF) /* タイムアウトのとき */
+ 1654 ex6_1.c      441                 {
+ 1655 ex6_1.c      442                    OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1656 ex6_1.c      443                 }
+ 1657 ex6_1.c      444                 
+ 1658 ex6_1.c      445                 if ((on_switch == 0) && (on_switch != previous_on_switch))
+ 1659 ex6_1.c      446                 /* 現在のONスイッチがオンで，直前のONスイッチの状態とは異なるとき */
+ 1660 ex6_1.c      447                 {
+ 1661 ex6_1.c      448                    src_port = 10000; /* 送信元ポート番号の設定 */
+ 1662 ex6_1.c      449                    dst_port = 10000; /* 宛先ポート番号の設定 */
+ 1663 ex6_1.c      450                    call_packet_send(packet, CONNECT_REPLY); /* 接続リプライを送信する */
+ 1664 ex6_1.c      451                    src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1665 ex6_1.c      452                    ONLINE_state(); /* オンラインの状態に遷移する */
+ 1666 ex6_1.c      453                 }
+ 1667 ex6_1.c      454                 previous_on_switch = on_switch;
+ 1668 ex6_1.c      455                 /* 現在のONスイッチの状態を，次のチェック時刻におけるONスイッチの状態として定義する */
+ 1669 ex6_1.c      456                 break;
+ 1670 ex6_1.c      457              case ONLINE : /* オンラインの状態 */
+ 1671 ex6_1.c      458                 if (speech_packet_send_flag == 1) /* speech_packet_send_flagが1のとき */
+ 1672 ex6_1.c      459                 {
+ 1673 ex6_1.c      460                    src_port = 20000; /* 送信元ポート番号の設定 */
+ 1674 ex6_1.c      461                    dst_port = 20000; /* 宛先ポート番号の設定 */
+ 1675 ex6_1.c      462                    speech_packet_send(packet); /* 音声データのパケットを送信する */
+ 1676 ex6_1.c      463                    src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1677 ex6_1.c      464                    speech_packet_send_flag = 0; /* speech_packet_send_flagを0に戻す */
+ 1678 ex6_1.c      465                    src_rtp_sequence_number++; /* src_rtp_sequence_numberをインクリメントする */
+ 1679 ex6_1.c      466                    src_rtp_time_stamp += 160; /* src_rtp_time_stampに160を加算する */
+ 1680 ex6_1.c      467                 }
+ 1681 ex6_1.c      468                 
+ 1682 ex6_1.c      469                 if ((off_switch == 0) && (off_switch != previous_off_switch))
+ 1683 ex6_1.c      470                 /* 現在のOFFスイッチがオンで，直前のOFFスイッチの状態とは異なるとき */
+ 1684 ex6_1.c      471                 {
+ 1685 ex6_1.c      472                    src_port = 10000; /* 送信元ポート番号の設定 */
+ 1686 ex6_1.c      473                    dst_port = 10000; /* 宛先ポート番号の設定 */
+ 1687 ex6_1.c      474                    call_packet_send(packet, DISCONNECT_REQUEST); /* 切断リクエストを送信する */
+ 1688 ex6_1.c      475                    src_ip_id++; /* 次のパケットのために，src_ip_idをインクリメントする */
+ 1689 ex6_1.c      476                    OFFLINE_state(); /* オフラインの状態に遷移する */
+ 1690 ex6_1.c      477                 }
+ 1691 ex6_1.c      478                 previous_off_switch = off_switch;
+ 1692 ex6_1.c      479                 /* 現在のOFFスイッチの状態を，次のチェック時刻におけるOFFスイッチの状態として定義する */
+ 1693 ex6_1.c      480                 break;
+ 1694 ex6_1.c      481           }
+ 1695 ex6_1.c      482        }
+ 1696 ex6_1.c      483     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)23-Feb-2008  12:10:00  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00001842 Byte(s)
+CONSTANT SECTION(C):                                0x00000012 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x000003C8 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00001842 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000012 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x000003C8 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00001C1C Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        4 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       64 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        250 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha
