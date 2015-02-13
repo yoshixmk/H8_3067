@@ -51,21 +51,61 @@ int main(void)
     src.sin_addr.s_addr = htonl(INADDR_ANY); /* あらゆるネットワーク機器からの接続を許可する */
     src.sin_port = htons(20000); /* クライアントのポート番号 */
 
-    printf("POCKETBELL server IP address:");/*入力を促す*/
+    /* ポート番号の設定 */
+    bind(src_socket, (LPSOCKADDR)&src, sizeof(src)); /* src_socketにクライアントのポート番号を設定する */
 
-    if (kbhit()) /* キーボードからの入力がある場合 */
-    {
-       gets(input_buffer);
-       printf("設定しました。%s\n", input_buffer);
-       dst.sin_addr.s_addr = inet_addr(input_buffer); /* サーバのIPアドレス */
-       printf("ポートは20000です。Enterを押してください。\n");
-       dst.sin_port = htons(20000); /* サーバのポート番号 */
-       key = getch(); /* キーのチェック */
-       if (key == 13) /* Enterキーが押されたとき */
-           printf("!\n");
-    }
+    /* サーバのソケット・アドレス （初期化）*/
+    memset(&dst, 0, sizeof(dst)); /* 0を書き込むことでdstをクリアする */
+    dst.sin_family = AF_INET; /* インターネットのアドレス・ファミリ */
+
+    printf("POCKETBELL server IP address:");/*入力を促す*/
     while (1) /* 無限ループ */
     {
-
+        if (kbhit()) /* キーボードからの入力がある場合 */
+        {
+           gets(input_buffer);
+           printf("設定しました。%s\n", input_buffer);
+           dst.sin_addr.s_addr = inet_addr(input_buffer); /* サーバのIPアドレス */
+           printf("ポートは30000です。Enterを押してください。\n");
+           dst.sin_port = htons(30000); /* サーバのポート番号 */
+           key = getch(); /* キーのチェック */
+           if (key == 13) /* Enterキーが押されたとき */
+               printf("!\n");
+               break;
+        }
     }
+
+       while (1) /* 無限ループ */
+       {
+          /* ポケベルへの送信データの入力 */
+          printf("send text data:");
+          gets(text_buffer);
+          /* 前のtext_dataを消去する */
+          for (i = 0; i < 16; i++)
+          {
+             text_data[i] = ' ';
+          }
+          /* text_bufferをtext_dataにコピーする */
+          for (i = 0; i < 16 && text_buffer[i] != '\0'; i++)
+          {
+             text_data[i] = text_buffer[i];
+          }
+
+          /* テキスト・データのパケットの送信 */
+          sendto(src_socket,
+                 text_data, /* テキスト・データ */
+                 16, /* テキスト・データのサイズ（16byte） */
+                 0,
+                 (LPSOCKADDR)&dst, /* サーバのソケット・アドレス */
+                 sizeof(dst)
+                );
+
+          /* 送信した文字列が"end"であれば，無限ループから抜ける */
+          if (strcmp(text_buffer, "end") == 0)
+          {
+             break;
+          }
+       }
+
+       return 0;
 }
