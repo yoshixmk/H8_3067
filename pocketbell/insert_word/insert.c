@@ -14,6 +14,9 @@ int main(void)
 			enter_count++;
 			i--; /*‰üs•¶š‚ÍŠÜ‚ß‚È‚¢‚½‚ß*/
 		}
+		else if(c < 48 || 57 < c){
+			i--; /*1-9ˆÈŠO‚ÍŠÜ‚ß‚È‚¢‚½‚ß*/
+		}
 		else{
 			enter_count = 0;
 			text_buffer[i] = c;
@@ -30,7 +33,10 @@ int main(void)
 		if(text_buffer[i+1] != '\0')
 			insert2 = text_buffer[i+1];
 		else break;
-		printf("%i%c%c\n",i,insert1,insert2);
+		
+		printf("%d%d\n",insert1-48,insert2-48);
 	}
+	
+	
 	return 0;
 }
