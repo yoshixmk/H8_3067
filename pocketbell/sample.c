@@ -654,7 +654,8 @@ void main(void)
             }
             else if((udp_packet -> eth_ethernet_type == 0x0800) && (strcmp(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
                 LCD_control(0xc0);
-                LCD_print(udp_packet -> text_data);
+                UDP_text_receive(packet);
+                /*LCD_print(udp_packet -> text_data);*/
             }
         }
     }
