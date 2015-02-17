@@ -28,12 +28,12 @@ typedef struct{
 
 typedef struct
 {
-	/* イーサネット・ヘッダ(14byte) */
+	/*イーサネットヘッダ(14)*/
 	unsigned char eth_dst_MAC[6];
 	unsigned char eth_src_MAC[6];
 	unsigned short eth_ethernet_type;
 
-	/* IPヘッダ(20byte) */
+
 	unsigned char ip_version_length;
 	unsigned char ip_service_type;
 	unsigned short ip_total_length;
@@ -45,7 +45,7 @@ typedef struct
 	unsigned char ip_src_IP[4];
 	unsigned char ip_dst_IP[4];
 
-	/* pingメッセージ(40byte) */
+	/*pingメッセージ(40byte)*/
 	unsigned char ping_type;
 	unsigned char ping_code;
 	unsigned short ping_checksum;
@@ -53,6 +53,32 @@ typedef struct
 	unsigned short ping_sequence_number;
 	unsigned char ping_data[32];
 } PING_PACKET;
+
+typedef struct
+{
+	unsigned char eth_dst_MAC[6];
+	unsigned char eth_src_MAC[6];
+	unsigned short eth_ethernet_type;
+
+	unsigned char ip_version_length;
+	unsigned char ip_service_type;
+	unsigned short ip_total_length;
+	unsigned short ip_id;
+	unsigned short ip_flags_fragment_offset;
+	unsigned char ip_time_to_live;
+	unsigned char ip_protocol;
+	unsigned short ip_checksum;
+	unsigned char ip_src_IP[4];
+	unsigned char ip_dst_IP[4];
+
+	unsigned short udp_src_port;
+	unsigned short udp_dst_port;
+	unsigned short udp_length;
+	unsigned short udp_checksum;
+
+	/* テキスト・データ(16byte) */
+	char text_data[16];
+} UDP_PACKET;
 
 void ms_timer(unsigned short ms)
 {
@@ -518,6 +544,22 @@ void ARP_reply(unsigned char *packet)
 	packet_send(packet, 60);
 }
 
+unsigned long ones_complement_sum(unsigned char *data, unsigned short offset, unsigned short size)
+{
+   unsigned short i;
+   unsigned long sum;
+
+   sum = 0;
+   for (i = offset; i < (offset + size); i += 2)
+   {
+      sum += ((unsigned long)data[i] << 8) + (unsigned long)data[i + 1];
+
+      sum = (sum & 0xFFFF) + (sum >> 16);
+   }
+
+   return sum;
+}
+
 void Ping_reply(unsigned char *packet)
 {
 	unsigned short i;
@@ -536,20 +578,30 @@ void Ping_reply(unsigned char *packet)
 	}
 	ping_packet -> ping_type = 0; /*pingリプライ*/
 
-	/* 送信側におけるIPヘッダのチェックサムの計算 */
-	ping_packet -> ip_checksum = 0x0000; /* チェックサムの初期値を0x0000にする */
-	sum = ones_complement_sum(packet, 14, 20); /* 1の補数和(IPヘッダ) */
+	ping_packet -> ip_checksum = 0x0000;
+	sum = ones_complement_sum(packet, 14, 20);
 	sum = (~sum) & 0xFFFF; /* 計算結果をNOT演算によって反転する */
 	ping_packet -> ip_checksum = (unsigned short)sum; /* 計算結果をセットする */
 
-	/* 送信側におけるpingメッセージのチェックサムの計算 */
-	ping_packet -> ping_checksum = 0x0000; /* チェックサムの初期値を0x0000にする */
-	sum = ones_complement_sum(packet, 34, 40); /* 1の補数和(pingメッセージ) */
+	ping_packet -> ping_checksum = 0x0000;
+	sum = ones_complement_sum(packet, 34, 40);
 	sum = (~sum) & 0xFFFF; /* 計算結果をNOT演算によって反転する */
 	ping_packet -> ping_checksum = (unsigned short)sum; /* 計算結果をセットする */
 
-	packet_send(packet, (14 + 20 + 40)); /* パケットを送信する */
+	packet_send(packet, (14 + 20 + 40));
 }
+
+void UDP_text_receive(unsigned char *packet)
+{
+	unsigned short i;
+	unsigned long sum;
+	PING_PACKET *ping_packet;
+	UDP_PACKET *udp_packet;
+	udp_packet = (UDP_PACKET *)packet;
+
+	LCD_print(udp_packet -> text_data);
+}
+
 void main(void)
 {
 	char str_src_MAC[13];
@@ -557,6 +609,7 @@ void main(void)
 	int i;
 	ARP_PACKET *arp_packet;
 	PING_PACKET *ping_packet;
+	UDP_PACKET *udp_packet;
 	P1DDR |= 0x1F;
 	P6DDR |= 0x30;
 	PADDR |= 0x80;
@@ -573,35 +626,51 @@ void main(void)
 	TSTR |= 0x04;
 	src_IP[0] = 10;
 	src_IP[1] = 1;
-	src_IP[2] = 69;
+	src_IP[2] = 68;
 	src_IP[3] = 139;
 	dst_IP[0] = 10;
 	dst_IP[1] = 1;
-	dst_IP[2] = 69;
+	dst_IP[2] = 68;
 	dst_IP[3] = 149;
     NIC_init();
     LCD_init();
     ms_timer(3000);
 	/*ARP_request(packet);*/
-	while(1){/*エラー解消から。コメントの文字コードエラーっぽい*/
+	while(1){
         if(packet_receive(packet) == 0){
             arp_packet = (ARP_PACKET *)packet;
             ping_packet = (PING_PACKET *)packet;
+            udp_packet =  (UDP_PACKET *)packet;
+
             if(arp_packet -> eth_ethernet_type == 0x0806 && (strcmp(arp_packet -> arp_dst_IP, src_IP) == 0)){
                 IP_to_str(arp_packet -> arp_src_IP, str_dst_IP);
                 MAC_to_str(arp_packet -> arp_src_MAC, str_src_MAC);
                 ARP_reply(packet);
-
-                LCD_print(str_dst_IP);
-                LCD_control(0xc0);
                 LCD_print(str_src_MAC);
             }
-            else if(ping_packet -> eth_ethernet_type == 0x0800 && (strcmp(arp_packet -> arp_dst_IP, src_IP) == 0)) && ping_packet -> ping_type == 8){
+            else if(ping_packet -> eth_ethernet_type == 0x0800  && (strcmp(ping_packet -> ip_dst_IP, src_IP) == 0) && ping_packet -> ping_type == 8){
                 LCD_display('!');
                 Ping_reply(packet);
+            }
+            else if((udp_packet -> eth_ethernet_type == 0x0800) && (strcmp(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
+                LCD_control(0xc0);
+                LCD_print(udp_packet -> text_data);
             }
         }
     }
 
     while(1);
 }
+	/*for (i = 0; i < 6; i++){
+		udp_packet -> eth_dst_MAC[i] = ping_packet -> eth_src_MAC[i];
+		udp_packet -> eth_src_MAC[i] = src_MAC[i];
+	}
+	for (i = 0; i < 4; i++){
+		udp_packet -> ip_dst_IP[i] = ping_packet -> ip_src_IP[i];
+		udp_packet -> ip_src_IP[i] = src_IP[i];
+	}
+	udp_packet -> udp_src_port = 30000;
+	udp_packet -> udp_dst_port = 20000;
+	udp_packet -> udp_length = 0x16;
+
+	udp_packet -> udp_checksum*/

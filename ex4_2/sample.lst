@@ -1,4 +1,4 @@
-H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 4-Feb-2015  18:03:37  PAGE   1
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)17-Feb-2015  11:43:40  PAGE   1
 
 ************ SOURCE LISTING ************
 
@@ -544,8 +544,7 @@ FILE NAME: sample.c
  1084 sample.c     537         LCD_print(str_src_MAC);
  1085 sample.c     538         while(1);
  1086 sample.c     539     }
- 1087 sample.c     540     /* && (strcmp(arp_packet -> arp_src_IP, dst_IP) == 0)*/
-H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 4-Feb-2015  18:03:37  PAGE   1
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)17-Feb-2015  11:43:40  PAGE   1
 
 *********** ERROR INFORMATION **********
 
@@ -557,7 +556,7 @@ sample.c     527 1016 (W)  ARGUMENT MISMATCH
 
 NUMBER OF ERRORS:          0 
 NUMBER OF WARNINGS:        2 
-H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 4-Feb-2015  18:03:37  PAGE   1
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)17-Feb-2015  11:43:40  PAGE   1
 
 ******* SECTION SIZE INFORMATION *******
 
