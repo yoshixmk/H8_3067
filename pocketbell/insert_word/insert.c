@@ -14,7 +14,6 @@ void printWord( char in1, char in2){
 							,"зийкл12345"
 							,"мІноп67890"};
 	putchar(write_str[in1-1][in2-1]);
-	putchar('\n');
 }
 
 int main(void)
@@ -65,7 +64,9 @@ int main(void)
 		else{
 			insert2 = insert2 - 48;
 		}
+		printWord(insert1, insert2);
 	}
-	printWord(insert1, insert2);
+	putchar('\n');
+	/*printWord(insert1, insert2);*/
 	return 0;
 }

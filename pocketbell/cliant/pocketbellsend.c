@@ -32,8 +32,9 @@ int main(void)
     SOCKET src_socket; /* クライアントのソケット */
     SOCKADDR_IN src; /* クライアントのソケット・アドレス */
     SOCKADDR_IN dst; /* サーバのソケット・アドレス */
+    int enter_count = 0;
     unsigned short i;
-    char key;
+    char key, c;
     unsigned short cursor;
     unsigned long argp;
     char input_buffer[256];
@@ -74,22 +75,30 @@ int main(void)
                break;
         }
     }
-
-       while (1) /* 無限ループ */
-       {
           /* ポケベルへの送信データの入力 */
           printf("send text data:");
-          gets(text_buffer);
-          /* 前のtext_dataを消去する */
-          for (i = 0; i < 16; i++)
-          {
-             text_data[i] = ' ';
-          }
-          /* text_bufferをtext_dataにコピーする */
-          for (i = 0; i < 16 && text_buffer[i] != '\0'; i++)
-          {
-             text_data[i] = text_buffer[i];
-          }
+
+	for(i=0; i < 16; i++){
+		c = getchar();
+		if(c == '\n'){
+			enter_count++;
+			i--; /*改行文字は含めないため*/
+		}
+		else if(c < 48 || 57 < c){
+			i--; /*1-9以外は含めないため*/
+		}
+		else{
+			enter_count = 0;
+			text_data[i] = c;
+		}
+		if(enter_count == 2){
+			text_data[++i] = '\0';
+			break;
+		}
+	}
+
+
+
 
           /* テキスト・データのパケットの送信 */
           sendto(src_socket,
@@ -99,13 +108,6 @@ int main(void)
                  (LPSOCKADDR)&dst, /* サーバのソケット・アドレス */
                  sizeof(dst)
                 );
-
-          /* 送信した文字列が"end"であれば，無限ループから抜ける */
-          if (strcmp(text_buffer, "end") == 0)
-          {
-             break;
-          }
-       }
 
        return 0;
 }
