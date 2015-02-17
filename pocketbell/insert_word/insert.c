@@ -25,7 +25,6 @@ int main(void)
 	char text_buffer[256];
 	char text[16][2];
 	/*クライアント側で使う*/
-	printf("%d : %d - 文字\n" , '0' , '1');
 	for(i=0; i < 256; i++){
 		c = getchar();
 		if(c == '\n'){
@@ -65,8 +64,7 @@ int main(void)
 		}
 		else{
 			insert2 = insert2 - 48;
-		}		/*printf("%d%d\n",insert1,insert2);*/
-		
+		}
 	}
 	printWord(insert1, insert2);
 	return 0;
