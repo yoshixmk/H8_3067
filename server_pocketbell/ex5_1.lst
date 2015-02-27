@@ -1,0 +1,197 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Feb-2015  12:35:26  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: ex5_1.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 ex5_1.c        1     unsigned char src_IP[4]; /* 送信元IPアドレス */
+    2 ex5_1.c        2     unsigned char src_MAC[6]; /* 送信元MACアドレス */
+    3 ex5_1.c        3     unsigned char dst_IP[4]; /* 宛先IPアドレス */
+    4 ex5_1.c        4     unsigned char dst_MAC[6]; /* 宛先MACアドレス */
+    5 ex5_1.c        5     unsigned char packet[256]; /* 送受信パケット用 */
+    6 ex5_1.c        6     typedef struct {
+    7 ex5_1.c        7             /* イーサネット・ヘッダ（14byte） */
+    8 ex5_1.c        8             unsigned char eth_dst_MAC[6];
+    9 ex5_1.c        9             unsigned char eth_src_MAC[6];
+   10 ex5_1.c       10             unsigned short eth_ethernet_type;
+   11 ex5_1.c       11     
+   12 ex5_1.c       12             /* ARPメッセージ（28byte） */
+   13 ex5_1.c       13             unsigned short arp_hardware_type;
+   14 ex5_1.c       14             unsigned short arp_protocol_type;
+   15 ex5_1.c       15             unsigned char arp_hardware_length;
+   16 ex5_1.c       16             unsigned char arp_protocol_length;
+   17 ex5_1.c       17             unsigned short arp_operation;
+   18 ex5_1.c       18             unsigned char arp_src_MAC[6];
+   19 ex5_1.c       19             unsigned char arp_src_IP[4];
+   20 ex5_1.c       20             unsigned char arp_dst_MAC[6];
+   21 ex5_1.c       21             unsigned char arp_dst_IP[4];
+   22 ex5_1.c       22     } ARP_PACKET;
+   23 ex5_1.c       23     
+   24 ex5_1.c       24     typedef struct
+   25 ex5_1.c       25     {
+   26 ex5_1.c       26             /* イーサネット・ヘッダ（14byte） */
+   27 ex5_1.c       27             unsigned char eth_dst_MAC[6];
+   28 ex5_1.c       28             unsigned char eth_src_MAC[6];
+   29 ex5_1.c       29             unsigned short eth_ethernet_type;
+   30 ex5_1.c       30     
+   31 ex5_1.c       31             /* IPヘッダ（20byte） */
+   32 ex5_1.c       32             unsigned char ip_version_length;
+   33 ex5_1.c       33             unsigned char ip_service_type;
+   34 ex5_1.c       34             unsigned short ip_total_length;
+   35 ex5_1.c       35             unsigned short ip_id;
+   36 ex5_1.c       36             unsigned short ip_flags_fragment_offset;
+   37 ex5_1.c       37             unsigned char ip_time_to_live;
+   38 ex5_1.c       38             unsigned char ip_protocol;
+   39 ex5_1.c       39             unsigned short ip_checksum;
+   40 ex5_1.c       40             unsigned char ip_src_IP[4];
+   41 ex5_1.c       41             unsigned char ip_dst_IP[4];
+   42 ex5_1.c       42     
+   43 ex5_1.c       43             /* pingメッセージ（40byte） */
+   44 ex5_1.c       44             unsigned char ping_type;
+   45 ex5_1.c       45             unsigned char ping_code;
+   46 ex5_1.c       46             unsigned short ping_checksum;
+   47 ex5_1.c       47             unsigned short ping_id;
+   48 ex5_1.c       48             unsigned short ping_sequence_number;
+   49 ex5_1.c       49             unsigned char ping_data[32];/*データサイズが32byteの場合*/
+   50 ex5_1.c       50     } PING_PACKET;
+   51 ex5_1.c       51     
+   52 ex5_1.c       52     typedef struct
+   53 ex5_1.c       53     {
+   54 ex5_1.c       54             unsigned char eth_dst_MAC[6];
+   55 ex5_1.c       55             unsigned char eth_src_MAC[6];
+   56 ex5_1.c       56             unsigned short eth_ethernet_type;
+   57 ex5_1.c       57     
+   58 ex5_1.c       58             unsigned char ip_version_length;
+   59 ex5_1.c       59             unsigned char ip_service_type;
+   60 ex5_1.c       60             unsigned short ip_total_length;
+   61 ex5_1.c       61             unsigned short ip_id;
+   62 ex5_1.c       62             unsigned short ip_flags_fragment_offset;
+   63 ex5_1.c       63             unsigned char ip_time_to_live;
+   64 ex5_1.c       64             unsigned char ip_protocol;
+   65 ex5_1.c       65             unsigned short ip_checksum;
+   66 ex5_1.c       66             unsigned char ip_src_IP[4];
+   67 ex5_1.c       67             unsigned char ip_dst_IP[4];
+   68 ex5_1.c       68     
+   69 ex5_1.c       69             unsigned short udp_src_port;
+   70 ex5_1.c       70             unsigned short udp_dst_port;
+   71 ex5_1.c       71             unsigned short udp_length;
+   72 ex5_1.c       72             unsigned short udp_checksum;
+   73 ex5_1.c       73     
+   74 ex5_1.c       74             /* テキスト・データ(16byte) */
+   75 ex5_1.c       75             char text_data[16];
+   76 ex5_1.c       76     } UDP_PACKET;
+   77 ex5_1.c       77     
+   78 ex5_1.c       78     #include "H8_register.h"
+  145 ex5_1.c       79     #include "H8_register_function.h"
+  198 ex5_1.c       80     #include "RTL8019AS_register.h"
+  237 ex5_1.c       81     #include "timer_function.h"
+  277 ex5_1.c       82     #include "RTL8019AS_function.h"
+  487 ex5_1.c       83     #include "lcd_function.h"
+  553 ex5_1.c       84     #include "matrix_key_function.h"
+  598 ex5_1.c       85     #include "utility_function.h"
+  749 ex5_1.c       86     #include "ARP_function.h"
+  820 ex5_1.c       87     #include "ping_function.h"
+  857 ex5_1.c       88     
+  858 ex5_1.c       89     void main(void)
+  859 ex5_1.c       90     {
+  860 ex5_1.c       91             ARP_PACKET *arp_packet; /* ARPパケット構造体 */
+  861 ex5_1.c       92             PING_PACKET *ping_packet; /* pingパケット構造体 */
+  862 ex5_1.c       93             UDP_PACKET *udp_packet;
+  863 ex5_1.c       94             unsigned char packet_type; /* パケットタイプ判定用 */
+  864 ex5_1.c       95     
+  865 ex5_1.c       96             src_IP[0]=10;
+  866 ex5_1.c       97             src_IP[1]=1;
+  867 ex5_1.c       98             src_IP[2]=68;
+  868 ex5_1.c       99             src_IP[3]=139;
+  869 ex5_1.c      100     
+  870 ex5_1.c      101             H8_register_init(); /* H8レジスタ初期化・設定 */
+  871 ex5_1.c      102     
+  872 ex5_1.c      103             LCD_init(); /* LCD初期化 */
+  873 ex5_1.c      104     
+  874 ex5_1.c      105             NIC_init(); /* NIC初期化 */
+  875 ex5_1.c      106             LCD_control(0x01);/*LCD clear*/
+  876 ex5_1.c      107             LCD_control(0x80); /* カーソルを1行目の先頭に移動する */
+  877 ex5_1.c      108             ms_timer(1000); /* Wait */
+  878 ex5_1.c      109     
+  879 ex5_1.c      110             while(1){
+  880 ex5_1.c      111                     packet_type = 0;
+  881 ex5_1.c      112     
+  882 ex5_1.c      113                     if (packet_receive(packet) != 1) /* パケットを受信したとき */
+  883 ex5_1.c      114                     {
+  884 ex5_1.c      115                             arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+  885 ex5_1.c      116                             if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  886 ex5_1.c      117                                     /* ARPのパケットのとき */
+  887 ex5_1.c      118                                     (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  888 ex5_1.c      119                                     /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  889 ex5_1.c      120                                     (arp_packet -> arp_operation == 1)
+  890 ex5_1.c      121                                     /* ARP Requestのとき */
+  891 ex5_1.c      122                                     )
+  892 ex5_1.c      123                             {
+  893 ex5_1.c      124                                     packet_type = 'a'; /* packet_typeをaにする */
+  894 ex5_1.c      125                             }
+  895 ex5_1.c      126                             ping_packet = (PING_PACKET *)packet; /* packetをPING_PACKET構造体に当てはめる */
+  896 ex5_1.c      127                             if ((ping_packet -> eth_ethernet_type == 0x0800) && 
+  897 ex5_1.c      128                                     /* IPのパケットのとき */
+  898 ex5_1.c      129                                     (IP_compare(ping_packet -> ip_dst_IP, src_IP) == 0) && 
+  899 ex5_1.c      130                                     /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+  900 ex5_1.c      131                                     (ping_packet -> ip_protocol == 1) && 
+  901 ex5_1.c      132                                     /* ICMPのパケットのとき */
+  902 ex5_1.c      133                                     (ping_packet -> ping_type == 8)
+  903 ex5_1.c      134                                     /* pingリクエストのとき */
+  904 ex5_1.c      135                                     )
+  905 ex5_1.c      136                             {
+  906 ex5_1.c      137                                     packet_type = 'p'; /* packet_typeを'p'にする */
+  907 ex5_1.c      138                             }
+  908 ex5_1.c      139                             udp_packet =  (UDP_PACKET *)packet;
+  909 ex5_1.c      140                 if((udp_packet -> eth_ethernet_type == 0x0800) && (IP_compare(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
+  910 ex5_1.c      141                     packet_type = 'u';
+  911 ex5_1.c      142                     UDP_text_receive(packet);
+  912 ex5_1.c      143                 }
+  913 ex5_1.c      144     
+  914 ex5_1.c      145                             switch (packet_type) /* packet_typeにしたがって処理を行う */
+  915 ex5_1.c      146                             {
+  916 ex5_1.c      147                             case 'a': /* packet_typeが'a'のとき */
+  917 ex5_1.c      148                                     ARP_reply(packet); /* ARPリプライ */
+  918 ex5_1.c      149                                     break;
+  919 ex5_1.c      150                             case 'p': /* packet_typeが'p'のとき */
+  920 ex5_1.c      151                                     LCD_display('!'); /* 液晶ディスプレイにpacket_typeを表示する */
+  921 ex5_1.c      152                                     ping_reply(packet); /* pingリプライ */
+  922 ex5_1.c      153                                     break;
+  923 ex5_1.c      154                             case 'u':
+  924 ex5_1.c      155                                 /*LCD_control(0xc0);*/
+  925 ex5_1.c      156                                 LCD_print(udp_packet -> text_data);
+  926 ex5_1.c      157                                 break;
+  927 ex5_1.c      158                             }
+  928 ex5_1.c      159                     }
+  929 ex5_1.c      160             }
+  930 ex5_1.c      161     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation)27-Feb-2015  12:35:26  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000C7A Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000114 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000C7A Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000114 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000D8E Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        3 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       28 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        118 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

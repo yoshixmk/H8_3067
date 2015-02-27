@@ -28,11 +28,9 @@ typedef struct{
 
 typedef struct
 {
-	/*イーサネットヘッダ(14)*/
 	unsigned char eth_dst_MAC[6];
 	unsigned char eth_src_MAC[6];
 	unsigned short eth_ethernet_type;
-
 
 	unsigned char ip_version_length;
 	unsigned char ip_service_type;
@@ -45,7 +43,6 @@ typedef struct
 	unsigned char ip_src_IP[4];
 	unsigned char ip_dst_IP[4];
 
-	/*pingメッセージ(40byte)*/
 	unsigned char ping_type;
 	unsigned char ping_code;
 	unsigned short ping_checksum;
@@ -576,12 +573,12 @@ void Ping_reply(unsigned char *packet)
 		ping_packet -> ip_dst_IP[i] = ping_packet -> ip_src_IP[i];
 		ping_packet -> ip_src_IP[i] = src_IP[i];
 	}
-	ping_packet -> ping_type = 0; /*pingリプライ*/
+	ping_packet -> ping_type = 0;
 
 	ping_packet -> ip_checksum = 0x0000;
 	sum = ones_complement_sum(packet, 14, 20);
-	sum = (~sum) & 0xFFFF; /* 計算結果をNOT演算によって反転する */
-	ping_packet -> ip_checksum = (unsigned short)sum; /* 計算結果をセットする */
+	sum = (~sum) & 0xFFFF;
+	ping_packet -> ip_checksum = (unsigned short)sum;
 
 	ping_packet -> ping_checksum = 0x0000;
 	sum = ones_complement_sum(packet, 34, 40);
@@ -595,7 +592,6 @@ void UDP_text_receive(unsigned char *packet)
 {
 	unsigned short i;
 	unsigned long sum;
-	PING_PACKET *ping_packet;
 	UDP_PACKET *udp_packet;
 	udp_packet = (UDP_PACKET *)packet;
 
@@ -642,20 +638,20 @@ void main(void)
             ping_packet = (PING_PACKET *)packet;
             udp_packet =  (UDP_PACKET *)packet;
 
-            if(arp_packet -> eth_ethernet_type == 0x0806 && (strcmp(arp_packet -> arp_dst_IP, src_IP) == 0)){
+            if((udp_packet -> eth_ethernet_type == 0x0800) && (strcmp(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
+                LCD_control(0xc0);
+                UDP_text_receive(packet);
+                LCD_print(udp_packet -> text_data);
+            }
+            else if(arp_packet -> eth_ethernet_type == 0x0806 && (strcmp(arp_packet -> arp_dst_IP, src_IP) == 0)){
                 IP_to_str(arp_packet -> arp_src_IP, str_dst_IP);
                 MAC_to_str(arp_packet -> arp_src_MAC, str_src_MAC);
                 ARP_reply(packet);
                 LCD_print(str_src_MAC);
             }
             else if(ping_packet -> eth_ethernet_type == 0x0800  && (strcmp(ping_packet -> ip_dst_IP, src_IP) == 0) && ping_packet -> ping_type == 8){
-                LCD_display('!');
+                LCD_print('!');
                 Ping_reply(packet);
-            }
-            else if((udp_packet -> eth_ethernet_type == 0x0800) && (strcmp(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
-                LCD_control(0xc0);
-                UDP_text_receive(packet);
-                /*LCD_print(udp_packet -> text_data);*/
             }
         }
     }

@@ -1,0 +1,139 @@
+                                        H SERIES LINKAGE EDITOR Ver. 5.3B
+
+
+LINK COMMAND LINE
+
+
+LNK -sub=ex5_1.sub 
+
+
+
+LINK SUBCOMMANDS
+
+
+input startup
+input ex5_1
+library ..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output ex5_1.abs
+print ex5_1.map
+exit
+** 105 UNDEFINED EXTERNAL SYMBOL(startup._int_ms_timer)
+** 105 UNDEFINED EXTERNAL SYMBOL(ex5_1._UDP_text_receive)
+** 121 CANNOT FIND SECTION(C)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+VECTOR                            H'00000000    -    H'00000083   H'00000084
+                                                              startup                            startup                         
+
+* TOTAL ADDRESS *                 H'00000000    -    H'00000083   H'00000084
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'00000100    -    H'00000109   H'0000000A
+                                                              startup                            startup                         
+                                  H'0000010A    -    H'00000D83   H'00000C7A
+                                                              ex5_1                              ex5_1                           
+                                  H'00000D84    -    H'00000DAB   H'00000028
+                                                              spregsv3                           spregsv3                        
+                                  H'00000DAC    -    H'00000DC1   H'00000016
+                                                              sprgld23                           sprgld23                        
+
+* TOTAL ADDRESS *                 H'00000100    -    H'00000DC1   H'00000CC2
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'000FEF20    -    H'000FF033   H'00000114
+                                                              ex5_1                              ex5_1                           
+
+* TOTAL ADDRESS *                 H'000FEF20    -    H'000FF033   H'00000114
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  $sp_regsv$3                          H'00000D84           DAT
+                                  $spregld2$3                          H'00000DAC           DAT
+                                  _ARP_reply                           H'00000AEE           ENT
+                                  _ARP_request                         H'000009F0           ENT
+                                  _H8_register_init                    H'0000010A           ENT
+                                  _IP_compare                          H'000008C2           ENT
+                                  _IP_input                            H'000008F4           ENT
+                                  _IP_to_str                           H'00000832           ENT
+                                  _LCD_control                         H'000006AA           ENT
+                                  _LCD_display                         H'0000068C           ENT
+                                  _LCD_init                            H'000006C8           ENT
+                                  _LCD_print                           H'0000072A           ENT
+                                  _LCD_write                           H'00000650           ENT
+                                  _MAC_to_str                          H'000007D4           ENT
+                                  _NIC_init                            H'0000028A           ENT
+                                  _NIC_read                            H'0000023A           ENT
+                                  _NIC_write                           H'00000262           ENT
+                                  _dst_IP                              H'000FEF2A           DAT
+                                  _dst_MAC                             H'000FEF2E           DAT
+                                  _main                                H'00000C78           ENT
+                                  _matrix_key_read                     H'00000744           ENT
+                                  _ms_timer                            H'00000204           ENT
+                                  _ones_complement_sum                 H'000009AA           ENT
+                                  _packet                              H'000FEF34           DAT
+                                  _packet_receive                      H'000004E8           ENT
+                                  _packet_send                         H'00000446           ENT
+                                  _ping_reply                          H'00000BB6           ENT
+                                  _src_IP                              H'000FEF20           DAT
+                                  _src_MAC                             H'000FEF24           DAT
+                                  _us_timer                            H'000001CE           ENT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      *** LINKAGE EDITOR UNRESOLVED EXTERNAL REFERENCE LIST ***
+
+ FILE NAME   : startup.OBJ                                                    
+                                                                              
+
+ MODULE NAME : startup                         
+ UNIT NAME   : startup                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  _int_ms_timer                                          ***
+
+ FILE NAME   : ex5_1.OBJ                                                      
+                                                                              
+
+ MODULE NAME : ex5_1                           
+ UNIT NAME   : ex5_1                           
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  _UDP_text_receive                                      ***
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 5.3B                      PAGE :     1
+
+                                      ***  LINKAGE EDITOR DEFINE LIST  ***
+
+                                 UNDEFINE SYMBOL                    DEFINED SYMBOL                     DEFINED VALUE
+
+                                  $STACK                                                                H'000FFF20

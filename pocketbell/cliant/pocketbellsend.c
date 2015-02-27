@@ -97,17 +97,14 @@ int main(void)
 		}
 	}
 
+    /* テキスト・データのパケットの送信 */
+    sendto(src_socket,
+         text_data, /* テキスト・データ */
+         16, /* テキスト・データのサイズ（16byte） */
+         0,
+         (LPSOCKADDR)&dst, /* サーバのソケット・アドレス */
+         sizeof(dst)
+        );
 
-
-
-          /* テキスト・データのパケットの送信 */
-          sendto(src_socket,
-                 text_data, /* テキスト・データ */
-                 16, /* テキスト・データのサイズ（16byte） */
-                 0,
-                 (LPSOCKADDR)&dst, /* サーバのソケット・アドレス */
-                 sizeof(dst)
-                );
-
-       return 0;
+     return 0;
 }

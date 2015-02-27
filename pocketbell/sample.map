@@ -45,16 +45,16 @@ ATTRIBUTE  :   CODE  NOSHR
 
 P                                 H'00000100    -    H'00000109   H'0000000A
                                                               startup                            startup                         
-                                  H'0000010A    -    H'00000DAD   H'00000CA4
+                                  H'0000010A    -    H'00000DB3   H'00000CAA
                                                               sample                             sample                          
-                                  H'00000DAE    -    H'00000DD5   H'00000028
+                                  H'00000DB4    -    H'00000DDB   H'00000028
                                                               strcmp                             strcmp                          
-                                  H'00000DD6    -    H'00000DFD   H'00000028
+                                  H'00000DDC    -    H'00000E03   H'00000028
                                                               spregsv3                           spregsv3                        
-                                  H'00000DFE    -    H'00000E13   H'00000016
+                                  H'00000E04    -    H'00000E19   H'00000016
                                                               sprgld23                           sprgld23                        
 
-* TOTAL ADDRESS *                 H'00000100    -    H'00000E13   H'00000D14
+* TOTAL ADDRESS *                 H'00000100    -    H'00000E19   H'00000D1A
 
 
 ATTRIBUTE  :   DATA  NOSHR
@@ -72,8 +72,8 @@ B                                 H'000FEF20    -    H'000FF02D   H'0000010E
 
                                  SYMBOL  NAME                         ADDR                 TYPE
 
-                                  $sp_regsv$3                          H'00000DD6           DAT
-                                  $spregld2$3                          H'00000DFE           DAT
+                                  $sp_regsv$3                          H'00000DDC           DAT
+                                  $spregld2$3                          H'00000E04           DAT
                                   _ARP_reply                           H'00000A48           ENT
                                   _ARP_request                         H'0000094A           ENT
                                   _IP_to_str                           H'000006AA           ENT
@@ -105,7 +105,7 @@ B                                 H'000FEF20    -    H'000FF02D   H'0000010E
                                   _sci_puts                            H'000001A2           ENT
                                   _src_IP                              H'000FEF20           DAT
                                   _src_MAC                             H'000FEF24           DAT
-                                  _strcmp                              H'00000DAE           ENT
+                                  _strcmp                              H'00000DB4           ENT
                                   _us_timer                            H'000001DC           ENT
 
 
