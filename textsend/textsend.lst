@@ -1,0 +1,94 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 6-Mar-2015  12:29:31  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: textsend.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 textsend.c     1     #include "H8_register.h" /* H8/3067のレジスタ */
+   68 textsend.c     2     #include "RTL8019AS_register.h" /* RTL8019ASのレジスタ */
+  107 textsend.c     3     #include "packet_definition.h" /* パケットの定義 */
+  165 textsend.c     4     #include "global_variables.h" /* グローバル変数の定義 */
+  175 textsend.c     5     #include "H8_register_function.h" /* H8/3067のレジスタの設定 */
+  228 textsend.c     6     #include "delay_function.h" /* 時間待ちの関数 */
+  264 textsend.c     7     #include "LCD_function.h" /* SC1602Bの関数 */
+  333 textsend.c     8     #include "NIC_function.h" /* RTL8019ASの関数 */
+  543 textsend.c     9     #include "matrix_key_function.h" /* マトリクス・キーの関数 */
+  588 textsend.c    10     #include "utility_function.h" /* そのほかの関数 */
+  722 textsend.c    11     #include "ARP_function.h" /* ARPの関数 */
+  793 textsend.c    12     #include "text_packet_function.h" /* テキスト・データのパケットの関数 */
+  913 textsend.c    13     
+  914 textsend.c    14     void main(void)
+  915 textsend.c    15     {
+  916 textsend.c    16        unsigned short i;
+  917 textsend.c    17        unsigned char packet_type;
+  918 textsend.c    18        ARP_PACKET *arp_packet;
+  919 textsend.c    19        TEXT_PACKET *udp_packet;
+  920 textsend.c    20        
+  921 textsend.c    21        H8_register_init(); /* H8/3067のレジスタの設定 */
+  922 textsend.c    22        LCD_init(); /* SC1602Bの初期化 */
+  923 textsend.c    23        NIC_init(); /* RTL8019ASの初期化 */
+  924 textsend.c    24        
+  925 textsend.c    25        /* 送信元IPアドレスの設定 */
+  926 textsend.c    26        src_IP[0] = 10;
+  927 textsend.c    27        src_IP[1] = 1;
+  928 textsend.c    28        src_IP[2] = 68;
+  929 textsend.c    29        src_IP[3] = 139; /* ディップ・スイッチによって送信元IPアドレスを設定する */
+  930 textsend.c    30        
+  931 textsend.c    31        /* 宛先IPアドレスの設定 */
+  932 textsend.c    32        dst_IP[0] = 10;
+  933 textsend.c    33        dst_IP[1] = 1;
+  934 textsend.c    34        dst_IP[2] = 68;
+  935 textsend.c    35        dst_IP[3] = 149;
+  936 textsend.c    36        
+  937 textsend.c    37        src_port = 30000; /* 送信元ポート番号の設定 */
+  938 textsend.c    38        dst_port = 20000; /* 宛先ポート番号の設定 */
+  939 textsend.c    39        
+  940 textsend.c    40        LCD_clear(); /* 表示クリア */
+  941 textsend.c    41        LCD_control(0x80); /* カーソルを0行目の先頭に移動する */
+  942 textsend.c    42        
+  943 textsend.c    43        delay_ms(2000); /* 2000ms（2秒）の時間待ち */
+  944 textsend.c    44        
+  945 textsend.c    45        /*ARP_request(packet);  ARPリクエスト */
+  946 textsend.c    46     
+  947 textsend.c    47        packet_type = 0; /* packet_typeを0にする */
+  948 textsend.c    48     
+  949 textsend.c    49     
+  950 textsend.c    50        while (1) /* 無限ループ */
+  951 textsend.c    51        {
+  952 textsend.c    52            if((udp_packet -> eth_ethernet_type == 0x0800) && (IP_compare(udp_packet -> ip_dst_IP, src_IP) == 0) && (udp_packet -> udp_dst_port == 30000)){
+  953 textsend.c    53                            UDP_text_receive(packet);
+  954 textsend.c    54                            LCD_print(udp_packet -> text_data);
+  955 textsend.c    55            }
+  956 textsend.c    56     
+  957 textsend.c    57        }
+  958 textsend.c    58     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 6-Mar-2015  12:29:31  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000DB2 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x0000012B Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000DB2 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x0000012B Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000EDD Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        3 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       34 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        128 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha
