@@ -1,0 +1,117 @@
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 9-Mar-2015  17:58:21  PAGE   1
+
+************ SOURCE LISTING ************
+
+FILE NAME: kadai01.c
+
+  Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
+    1 kadai01.c      1     unsigned char src_IP[4]; /* 送信元IPアドレス */
+    2 kadai01.c      2     unsigned char src_MAC[6]; /* 送信元MACアドレス */
+    3 kadai01.c      3     unsigned char dst_IP[4]; /* 宛先IPアドレス */
+    4 kadai01.c      4     unsigned char dst_MAC[6]; /* 宛先MACアドレス */
+    5 kadai01.c      5     unsigned char packet[256]; /* 送受信パケット用 */
+    6 kadai01.c      6     
+    7 kadai01.c      7     #include <string.h>
+  105 kadai01.c      8     #include "H8_register.h"
+  172 kadai01.c      9     #include "H8_register_function.h"
+  225 kadai01.c     10     #include "RTL8019AS_register.h"
+  264 kadai01.c     11     #include "timer_function.h"
+  304 kadai01.c     12     #include "RTL8019AS_function.h"
+  514 kadai01.c     13     #include "lcd_function.h"
+  586 kadai01.c     14     #include "matrix_key_function.h"
+  631 kadai01.c     15     #include "utility_function.h"
+  782 kadai01.c     16     #include "global_variables.h"
+  860 kadai01.c     17     #include "ARP_function.h"
+  931 kadai01.c     18     #include "ping_function.h"
+ 1029 kadai01.c     19     
+ 1030 kadai01.c     20     void main(void)
+ 1031 kadai01.c     21     {
+ 1032 kadai01.c     22             ARP_PACKET *arp_packet; /* ARPパケット構造体 */
+ 1033 kadai01.c     23             UDP_PACKET *udp_packet; /* pingパケット構造体 */
+ 1034 kadai01.c     24             unsigned char packet_type; /* パケットタイプ判定用 */
+ 1035 kadai01.c     25             char lcd_data[25];
+ 1036 kadai01.c     26             int i,j,k;
+ 1037 kadai01.c     27             /* 送信元IPアドレス  10.1.68.160*/
+ 1038 kadai01.c     28             src_IP[0]=10;
+ 1039 kadai01.c     29             src_IP[1]=1;
+ 1040 kadai01.c     30             src_IP[2]=69;
+ 1041 kadai01.c     31             src_IP[3]=139;
+ 1042 kadai01.c     32     
+ 1043 kadai01.c     33             H8_register_init(); /* H8レジスタ初期化・設定 */
+ 1044 kadai01.c     34     
+ 1045 kadai01.c     35             LCD_init(); /* LCD初期化 */
+ 1046 kadai01.c     36     
+ 1047 kadai01.c     37             NIC_init(); /* NIC初期化 */
+ 1048 kadai01.c     38             LCD_control(0x01);/*LCD clear*/
+ 1049 kadai01.c     39             LCD_control(0x80); /* カーソルを1行目の先頭に移動する */
+ 1050 kadai01.c     40             ms_timer(1000); /* Wait */
+ 1051 kadai01.c     41     
+ 1052 kadai01.c     42             while(1){
+ 1053 kadai01.c     43                     packet_type = 0;
+ 1054 kadai01.c     44                     
+ 1055 kadai01.c     45                     if (packet_receive(packet) != 1) /* パケットを受信したとき */
+ 1056 kadai01.c     46                     {
+ 1057 kadai01.c     47                             arp_packet = (ARP_PACKET *)packet; /* packetをARP_PACKET構造体に当てはめる */
+ 1058 kadai01.c     48                             udp_packet = (UDP_PACKET *)packet; /* packetをUDP_PACKET構造体に当てはめる */
+ 1059 kadai01.c     49                             if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+ 1060 kadai01.c     50                                     /* ARPのパケットのとき */
+ 1061 kadai01.c     51                                     (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+ 1062 kadai01.c     52                                     /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1063 kadai01.c     53                                     (arp_packet -> arp_operation == 1)
+ 1064 kadai01.c     54                                     /* ARP Requestのとき */
+ 1065 kadai01.c     55                                     )
+ 1066 kadai01.c     56                             {
+ 1067 kadai01.c     57                                     ARP_reply(packet);
+ 1068 kadai01.c     58                             }
+ 1069 kadai01.c     59                             if ((udp_packet -> eth_ethernet_type == 0x0800) && 
+ 1070 kadai01.c     60                                     /* IPのパケットのとき */
+ 1071 kadai01.c     61                                     (IP_compare(udp_packet -> ip_dst_IP, src_IP) == 0) && 
+ 1072 kadai01.c     62                                     /* パケットに記述されている宛先IPアドレスが送信元IPアドレスに一致したとき */
+ 1073 kadai01.c     63                                     (udp_packet -> ip_protocol == 17) && 
+ 1074 kadai01.c     64                                     /* ICMPのパケットのとき */
+ 1075 kadai01.c     65                                     (udp_packet -> udp_dst_port == 30000)
+ 1076 kadai01.c     66                                     /* UDPポートが12345のとき */
+ 1077 kadai01.c     67                                     )
+ 1078 kadai01.c     68                             {
+ 1079 kadai01.c     69                                     LCD_control(0x80);
+ 1080 kadai01.c     70                                     for(i=0;i<25;i++)
+ 1081 kadai01.c     71                                     {
+ 1082 kadai01.c     72                                             if(i<8)lcd_data[i] = packet[42+i];
+ 1083 kadai01.c     73                                             else lcd_data[i] = ' ';
+ 1084 kadai01.c     74                                     }
+ 1085 kadai01.c     75                     LCD_print(lcd_data);
+ 1086 kadai01.c     76                     LCD_control(0x80);
+ 1087 kadai01.c     77                     ms_timer(1500);
+ 1088 kadai01.c     78                             }
+ 1089 kadai01.c     79                     }
+ 1090 kadai01.c     80             }
+ 1091 kadai01.c     81     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 9-Mar-2015  17:58:21  PAGE   1
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION(P):                                0x00000DB2 Byte(s)
+CONSTANT SECTION(C):                                0x00000000 Byte(s)
+DATA     SECTION(D):                                0x00000000 Byte(s)
+BSS      SECTION(B):                                0x00000114 Byte(s)
+
+TOTAL PROGRAM  SECTION: 0x00000DB2 Byte(s)
+TOTAL CONSTANT SECTION: 0x00000000 Byte(s)
+TOTAL DATA     SECTION: 0x00000000 Byte(s)
+TOTAL BSS      SECTION: 0x00000114 Byte(s)
+
+    TOTAL PROGRAM SIZE: 0x00000EC6 Byte(s)
+
+
+
+** ASSEMBLER/LINKAGE EDITOR LIMITS INFORMATION **
+
+NUMBER OF EXTERNAL REFERENCE  SYMBOLS:        2 
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:       30 
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:        122 
+
+
+
+********* CPU MODE INFORMATION *********
+
+cpu=300ha

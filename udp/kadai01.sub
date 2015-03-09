@@ -1,0 +1,8 @@
+input startup
+input kadai01
+library ..\TOOL\lib\C38HA.LIB
+define $STACK(0FFF20)
+start VECTOR(00000), P, C(00100), B(0FEF20)
+output kadai01.abs
+print kadai01.map
+exit

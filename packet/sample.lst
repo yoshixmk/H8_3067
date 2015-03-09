@@ -1,397 +1,152 @@
-H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 6-Jan-2015  11:44:32  PAGE   1
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 9-Mar-2015  18:36:15  PAGE   1
 
 ************ SOURCE LISTING ************
 
 FILE NAME: sample.c
 
   Seq File        Line Pi 0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----0----+
-    1 sample.c       1     #include <sci.h>
-  138 sample.c       2     #include <reg3067.h>
-  309 sample.c       3     #include <machine.h>
-  416 sample.c       4     #include <RTL8019AS_register.h>
-  455 sample.c       5     
-  456 sample.c       6     unsigned char src_MAC[6];
-  457 sample.c       7     
-  458 sample.c       8     void ms_timer(unsigned short ms)
-  459 sample.c       9     {
-  460 sample.c      10             int j;
-  461 sample.c      11     
-  462 sample.c      12             TSTR |= 0x04;
-  463 sample.c      13             for(j=0;j<ms;j++){
-  464 sample.c      14                     while((TISRA & 0x04) != 0x04);
-  465 sample.c      15                     TISRA &= 0xFB;
-  466 sample.c      16             }
-  467 sample.c      17             TSTR &= 0xFB;
-  468 sample.c      18     }
-  469 sample.c      19     
-  470 sample.c      20     void us_timer(unsigned short us)
-  471 sample.c      21     {
-  472 sample.c      22             int j;
-  473 sample.c      23     
-  474 sample.c      24             TSTR |= 0x02;
-  475 sample.c      25             for(j=0;j<us;j++){
-  476 sample.c      26                     while((TISRA & 0x02) != 0x02);
-  477 sample.c      27                     TISRA &= 0xFD;
-  478 sample.c      28             }
-  479 sample.c      29             TSTR &= 0xFD;
-  480 sample.c      30     }
-  481 sample.c      31     
-  482 sample.c      32     unsigned char NIC_read(unsigned char address)
-  483 sample.c      33     {
-  484 sample.c      34             unsigned char data;
-  485 sample.c      35     
-  486 sample.c      36             P1DR = address;
-  487 sample.c      37             P3DDR = 0x00;
-  488 sample.c      38             P6DR &= 0xEF;
-  489 sample.c      39             data = P3DR;
-  490 sample.c      40             P6DR |= 0x10;
-  491 sample.c      41             return data;
-  492 sample.c      42     }
-  493 sample.c      43     
-  494 sample.c      44     void NIC_write(unsigned char address, unsigned char data)
-  495 sample.c      45     {
-  496 sample.c      46             P1DR = address;
-  497 sample.c      47             P3DDR = 0xFF;
-  498 sample.c      48             P6DR &= 0xDF;
-  499 sample.c      49             P3DR = data;
-  500 sample.c      50             P6DR |= 0x20;
-  501 sample.c      51     }
-  502 sample.c      52     
-  503 sample.c      53     void NIC_init(void)
-  504 sample.c      54     {
-  505 sample.c      55             unsigned short i;
-  506 sample.c      56             unsigned char data;
-  507 sample.c      57     
-  508 sample.c      58             /*ãƒãƒ¼ãƒ‰ã‚¦ã‚§ã‚¢ãƒªã‚»ãƒƒãƒˆ*/
-  509 sample.c      59             PADR |= 0x80;
-  510 sample.c      60             ms_timer(10);
-  511 sample.c      61             PADR &= 0x7F;
-  512 sample.c      62             ms_timer(10);
-  513 sample.c      63     
-  514 sample.c      64             data = NIC_read(RP);
-  515 sample.c      65             NIC_write(RP,data);
-  516 sample.c      66             ms_timer(10);
-  517 sample.c      67     
-  518 sample.c      68             NIC_write(CR,0x21);
-  519 sample.c      69             NIC_write(DCR,0x4A);
-  520 sample.c      70             NIC_write(RBCR0,0);
-  521 sample.c      71             NIC_write(RBCR1,0);
-  522 sample.c      72             NIC_write(RCR,0x20);
-  523 sample.c      73             NIC_write(TCR,0x02);
-  524 sample.c      74             NIC_write(TPSR,0x40);
-  525 sample.c      75             NIC_write(PSTART,0x46);
-  526 sample.c      76             NIC_write(BNRY,0x46);
-  527 sample.c      77             NIC_write(PSTOP,0x60);
-  528 sample.c      78             NIC_write(IMR,0x00);
-  529 sample.c      79             NIC_write(ISR,0xFF);
-  530 sample.c      80     
-  531 sample.c      81             NIC_write(RBCR0,12);
-  532 sample.c      82             NIC_write(RBCR1,0);
-  533 sample.c      83             NIC_write(RSAR0,0x00);
-  534 sample.c      84             NIC_write(RSAR1,0x00);
-  535 sample.c      85             NIC_write(CR,0x0A);
-  536 sample.c      86             for(i=0;i<6;i+=2){
-  537 sample.c      87                     src_MAC[i+1]=NIC_read(RDMAP);
-  538 sample.c      88                     NIC_read(RDMAP);
-  539 sample.c      89                     src_MAC[i]=NIC_read(RDMAP);
-  540 sample.c      90                     NIC_read(RDMAP);
-  541 sample.c      91             }
-  542 sample.c      92             do{
-  543 sample.c      93                     data = NIC_read(ISR);
-  544 sample.c      94             }while((data & 0x40) == 0x00);
-  545 sample.c      95     
-  546 sample.c      96             NIC_write(CR,0x61);
-  547 sample.c      97             NIC_write(PAR0,src_MAC[0]);
-  548 sample.c      98             NIC_write(PAR1,src_MAC[1]);
-  549 sample.c      99             NIC_write(PAR2,src_MAC[2]);
-  550 sample.c     100             NIC_write(PAR3,src_MAC[3]);
-  551 sample.c     101             NIC_write(PAR4,src_MAC[4]);
-  552 sample.c     102             NIC_write(PAR5,src_MAC[5]);
-  553 sample.c     103     
-  554 sample.c     104             NIC_write(CURR,0x47);
-  555 sample.c     105     
-  556 sample.c     106             NIC_write(MAR0,0);
-  557 sample.c     107             NIC_write(MAR1,0);
-  558 sample.c     108             NIC_write(MAR2,0);
-  559 sample.c     109             NIC_write(MAR3,0);
-  560 sample.c     110             NIC_write(MAR4,0);
-  561 sample.c     111             NIC_write(MAR5,0);
-  562 sample.c     112             NIC_write(MAR6,0);
-  563 sample.c     113             NIC_write(MAR7,0);
-  564 sample.c     114     
-  565 sample.c     115             NIC_write(CR,0x21);
-  566 sample.c     116             NIC_write(RCR,0x04);
-  567 sample.c     117             NIC_write(CR,0x22);
-  568 sample.c     118             NIC_write(TCR,0x00);
-  569 sample.c     119             NIC_write(IMR,0x00);
-  570 sample.c     120     }
-  571 sample.c     121     
-  572 sample.c     122     void MAC_to_str(unsigned char *MAC, char *str)
-  573 sample.c     123     {
-  574 sample.c     124             unsigned short i, n;
-  575 sample.c     125             unsigned char nibble;
-  576 sample.c     126     
-  577 sample.c     127             n=0;
-  578 sample.c     128             for(i=0;i<6;i++)
-  579 sample.c     129             {
-  580 sample.c     130                     nibble = (MAC[i] & 0xF0) >> 4;
-  581 sample.c     131                     if(nibble < 10){
-  582 sample.c     132                             str[n] = '0' + nibble;
-  583 sample.c     133     
-  584 sample.c     134                     }
-  585 sample.c     135                     else{
-  586 sample.c     136                             str[n] = 'A' + nibble - 10;
-  587 sample.c     137     
-  588 sample.c     138                     }
-  589 sample.c     139                     n++;
-  590 sample.c     140                     nibble = MAC[i] & 0x0F;
-  591 sample.c     141                     if(nibble < 10){
-  592 sample.c     142                             str[n] = '0' + nibble;
-  593 sample.c     143     
-  594 sample.c     144                     }
-  595 sample.c     145                     else{
-  596 sample.c     146                             str[n] = 'A' + nibble - 10;
-  597 sample.c     147     
-  598 sample.c     148                     }
-  599 sample.c     149                     n++;
-  600 sample.c     150             }
-  601 sample.c     151             str[n] = 0x00;
-  602 sample.c     152     }
-  603 sample.c     153     
-  604 sample.c     154     void LCD_write(char data, char RS)
-  605 sample.c     155     {
-  606 sample.c     156             PBDR = data & 0xF0;
-  607 sample.c     157             if(RS == 1)
-  608 sample.c     158             {
-  609 sample.c     159                     PBDR |= 0x02;/*RSã«1ã‚’ã‚»ãƒƒãƒˆã™ã‚‹*/
-  610 sample.c     160             }
-  611 sample.c     161             else
-  612 sample.c     162             {
-  613 sample.c     163                     PBDR &= 0xFD;/*RSã«0ã‚’ã‚»ãƒƒãƒˆã™ã‚‹*/
-  614 sample.c     164             }
-  615 sample.c     165     
-  616 sample.c     166             ms_timer(1);/*40nsä»¥ä¸Šã®æ™‚é–“å¾…ã¡*/
-  617 sample.c     167             PBDR |= 0x01;/*Eã«1ã‚’ã‚»ãƒƒãƒˆã™ã‚‹*/
-  618 sample.c     168             ms_timer(1);/*230nsä»¥ä¸Šå¾…ã¡*/
-  619 sample.c     169             PBDR &= 0xFE;/*Eã«0ã‚’ã‚»ãƒƒãƒˆã™ã‚‹*/
-  620 sample.c     170     }
-  621 sample.c     171     
-  622 sample.c     172     void LCD_display(char code)
-  623 sample.c     173     {
-  624 sample.c     174             LCD_write(code,1);
-  625 sample.c     175             LCD_write(code << 4,1);
-  626 sample.c     176             ms_timer(1);/*40usä»¥ä¸Šå¾…ã¡*/
-  627 sample.c     177     }
-  628 sample.c     178     
-  629 sample.c     179     void LCD_control(char code)
-  630 sample.c     180     {
-  631 sample.c     181             LCD_write(code, 0);
-  632 sample.c     182             LCD_write(code << 4, 0);
-  633 sample.c     183             ms_timer(1);/*40usä»¥ä¸Šå¾…ã¡*/
-  634 sample.c     184     }
-  635 sample.c     185     
-  636 sample.c     186     void LCD_init(void)
-  637 sample.c     187     {
-  638 sample.c     188             ms_timer(15);
-  639 sample.c     189             LCD_write(0x30,0);
-  640 sample.c     190             ms_timer(1);
-  641 sample.c     191             LCD_write(0x30,0);
-  642 sample.c     192             ms_timer(1);
-  643 sample.c     193             LCD_write(0x30,0);
-  644 sample.c     194             ms_timer(5);
-  645 sample.c     195             LCD_write(0x20,0);
-  646 sample.c     196             ms_timer(1);
-  647 sample.c     197             LCD_control(0x28);
-  648 sample.c     198             LCD_control(0x08);
-  649 sample.c     199             LCD_control(0x0C);
-  650 sample.c     200             LCD_control(0x06);
-  651 sample.c     201     }
-  652 sample.c     202     
-  653 sample.c     203     void LCD_print(char *str)
-  654 sample.c     204     {
-  655 sample.c     205             for(; *str != '\0'; str++){
-  656 sample.c     206                     LCD_display(*str);
-  657 sample.c     207             }
-  658 sample.c     208     }
-  659 sample.c     209     char matrix_key_read(void)
-  660 sample.c     210     {
-  661 sample.c     211             char key;
-  662 sample.c     212             unsigned char column, row;
-  663 sample.c     213     
-  664 sample.c     214             key = 0;
-  665 sample.c     215             column = 0x10;
-  666 sample.c     216     
-  667 sample.c     217             while(column <= 0x40)
-  668 sample.c     218             {
-  669 sample.c     219                     P4DR = ~column;
-  670 sample.c     220     
-  671 sample.c     221                     row =(~P4DR) & 0x0f;
-  672 sample.c     222     
-  673 sample.c     223                     if(row != 0)
-  674 sample.c     224                     {
-  675 sample.c     225                             switch(column | row)
-  676 sample.c     226                             {
-  677 sample.c     227                                     case 0x11 : key ='1'; break;
-  678 sample.c     228                                     case 0x12 : key ='2'; break;
-  679 sample.c     229                                     case 0x14 : key ='3'; break;
-  680 sample.c     230                                     case 0x18 : key ='4'; break;
-  681 sample.c     231                                     
-  682 sample.c     232                                     case 0x21 : key ='5'; break;
-  683 sample.c     233                                     case 0x22 : key ='6'; break;
-  684 sample.c     234                                     case 0x24 : key ='7'; break;
-  685 sample.c     235                                     case 0x28 : key ='8'; break;
-  686 sample.c     236                                     
-  687 sample.c     237                                     case 0x41 : key ='9'; break;
-  688 sample.c     238                                     case 0x42 : key ='.'; break;
-  689 sample.c     239                                     case 0x44 : key ='0'; break;
-  690 sample.c     240                                     case 0x48 : key ='#'; break;
-  691 sample.c     241                                     
-  692 sample.c     242                                     default : key = 0; break;
-  693 sample.c     243                             }
-  694 sample.c     244                     }
-  695 sample.c     245                     column = column << 1;
-  696 sample.c     246             }
-  697 sample.c     247             return key;
-  698 sample.c     248     }
-  699 sample.c     249     
-  700 sample.c     250     void packet_send(unsigned char *packet, unsigned short size)
-  701 sample.c     251     {
-  702 sample.c     252             unsigned short i;
-  703 sample.c     253             unsigned char data;
-  704 sample.c     254             unsigned char size_H,size_L;
-  705 sample.c     255     
-  706 sample.c     256             size_L = (unsigned char)(size & 0x00FF);
-  707 sample.c     257             size_H = (unsigned char)(size >> 8);
-  708 sample.c     258     
-  709 sample.c     259             NIC_write(CR,0x22);
-  710 sample.c     260             NIC_write(RBCR0,size_L);
-  711 sample.c     261             NIC_write(RBCR1,size_H);
-  712 sample.c     262             NIC_write(RSAR0.0x00);
-  713 sample.c     263             NIC_write(RSAR1,0x12);
-  714 sample.c     264             NIC_write(CR,0x12);
-  715 sample.c     265             for(i=0;i<size;i++){
-  716 sample.c     266                     NIC_write(RDMAP,packet[i]);
-  717 sample.c     267             }
-  718 sample.c     268             do{
-  719 sample.c     269                     data = NIC_read(ISR);
-  720 sample.c     270             }while((data & 0x40) == 0x00);
-  721 sample.c     271     
-  722 sample.c     272             NIC_write(CR,0x22);
-  723 sample.c     273             NIC_write(TBCR0,size_L);
-  724 sample.c     274             NIC_write(TBCR1,size_H);
-  725 sample.c     275             NIC_write(TPSR, 0x40);
-  726 sample.c     276             NIC_write(CR,0x26);
-  727 sample.c     277             do{
-  728 sample.c     278                     data = NIC_read(CR);
-  729 sample.c     279             }while((data & 0x04)==0x04);
-  730 sample.c     280     }
-  731 sample.c     281     
-  732 sample.c     282     unsigned char packet_recive(unsigned char *packet)
-  733 sample.c     283     {
-  734 sample.c     284             unsigned short i;
-  735 sample.c     285             unsigned short size;
-  736 sample.c     286             unsigned char data;
-  737 sample.c     287             unsigned char size_H,size_L;
-  738 sample.c     288             unsigned char boundary_page,start_page,current_page;
-  739 sample.c     289             unsigned char header[4];
-  740 sample.c     290     
-  741 sample.c     291             NIC_write(CR,0x22);
-  742 sample.c     292             boundary_page = NIC_read(BNRY);
-  743 sample.c     293             NIC_write(CR,0x62);
-  744 sample.c     294             current_page = NIC_read(CURR);
-  745 sample.c     295     
-  746 sample.c     296             if(current_page < boundary_page){
-  747 sample.c     297                     current_page += (0x60 - 0x46);
-  748 sample.c     298             }
-  749 sample.c     299             if(current_page == boundary_page + 1){
-  750 sample.c     300                     return 1;
-  751 sample.c     301             }
-  752 sample.c     302             start_page = boundary_page + 1;
-  753 sample.c     303             if(start_page == 0x60){
-  754 sample.c     304                     start_page = 0x46;
-  755 sample.c     305             }
-  756 sample.c     306     
-  757 sample.c     307             NIC_write(CR,0x22);
-  758 sample.c     308             NIC_write(RBCR0,4);
-  759 sample.c     309             NIC_write(RBCR1,0);
-  760 sample.c     310             NIC_write(RSAR0,0);
-  761 sample.c     311             NIC_write(RSAR1,start_page);
-  762 sample.c     312             NIC_write(CR,0x0A);
-  763 sample.c     313             for(i=0;i<4;i++){
-  764 sample.c     314                     header[i] = NIC_read(RDMAP);
-  765 sample.c     315             }
-  766 sample.c     316             do{
-  767 sample.c     317                     data =NIC_read(ISR);
-  768 sample.c     318             }while((data & 0x40) == 0x00);
-  769 sample.c     319     
-  770 sample.c     320             NIC_write(CR,0x22);
-  771 sample.c     321             size_L = header[2];
-  772 sample.c     322             size_H = header[3];
-  773 sample.c     323             size = ((unsigned short)size_H << 8) + (unsigned short)size_L;
-  774 sample.c     324             NIC_write(RBCR0,size_L);
-  775 sample.c     325             NIC_write(RBCR1,size_H);
-  776 sample.c     326             NIC_write(RSAR0,0);
-  777 sample.c     327             NIC_write(RSAR1,start_page);
-  778 sample.c     328             NIC_write(CR, 0x0A);
-  779 sample.c     329             for(i=0;i<4;i++){
-  780 sample.c     330                     packet[i] = NIC_read(RDMAP);
-  781 sample.c     331     
-  782 sample.c     332                     if(i >= 256){
-  783 sample.c     333                             NIC_read(RDMAP);
-  784 sample.c     334                     }
-  785 sample.c     335             }
-  786 sample.c     336             do{
-  787 sample.c     337                     data = NIC_read(ISR);
-  788 sample.c     338             }while((data & 0x40) == 0x00);
-  789 sample.c     339     
-  790 sample.c     340             NIC_write(CR,0x22);
-  791 sample.c     341             boundary_page = current_page - 1;
-  792 sample.c     342             if(boundary_page >= 0x60){
-  793 sample.c     343                     boundary_page -= (0x60 - 0x46);
-  794 sample.c     344             }
-  795 sample.c     345             nic_write(BNRY,boundary_page);
-  796 sample.c     346     
-  797 sample.c     347             return 0;
-  798 sample.c     348     }
-  799 sample.c     349     
-  800 sample.c     350     void main(void)
-  801 sample.c     351     {
-  802 sample.c     352             char key;
-  803 sample.c     353             char str[13];
-  804 sample.c     354             char *send = "123456789";
-  805 sample.c     355             char *recive;
-  806 sample.c     356             int t;
-  807 sample.c     357             PADDR |= 0x80;
-  808 sample.c     358             PBDDR = 0xF3;
-  809 sample.c     359             P1DDR |= 0x1F;
-  810 sample.c     360             P6DDR |= 0x30;
-  811 sample.c     361     
-  812 sample.c     362             TCR1 = 0xA0;
-  813 sample.c     363             GRA1 = 0x13;
-  814 sample.c     364             TCR2 = 0xA3;
-  815 sample.c     365             GRA2 = 0x09C3;
-  816 sample.c     366     
-  817 sample.c     367             NIC_init();
-  818 sample.c     368             LCD_init();
-  819 sample.c     369             MAC_to_str(src_MAC,str);
-  820 sample.c     370             LCD_control(0x01);
-  821 sample.c     371             LCD_print(str);
-  822 sample.c     372     
-  823 sample.c     373             packet_send(send,size_of(send));
-  824 sample.c     374             packet_recive();
-  825 sample.c     375             while(1){}
-  826 sample.c     376     }
-H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 6-Jan-2015  11:44:32  PAGE   1
+    1 sample.c       1     unsigned char src_IP[4]; /* ‘—MŒ³IPƒAƒhƒŒƒX */
+    2 sample.c       2     unsigned char src_MAC[6]; /* ‘—MŒ³MACƒAƒhƒŒƒX */
+    3 sample.c       3     unsigned char dst_IP[4]; /* ˆ¶æIPƒAƒhƒŒƒX */
+    4 sample.c       4     unsigned char dst_MAC[6]; /* ˆ¶æMACƒAƒhƒŒƒX */
+    5 sample.c       5     unsigned char packet[256]; /* ‘—ŽóMƒpƒPƒbƒg—p */
+    6 sample.c       6     
+    7 sample.c       7     #include <string.h>
+  105 sample.c       8     #include "H8_register.h"
+  106 sample.c       9     #include "H8_register_function.h"
+  107 sample.c      10     #include "RTL8019AS_register.h"
+  146 sample.c      11     #include "timer_function.h"
+  147 sample.c      12     #include "RTL8019AS_function.h"
+  148 sample.c      13     #include "lcd_function.h"
+  149 sample.c      14     #include "matrix_key_function.h"
+  150 sample.c      15     #include "utility_function.h"
+  301 sample.c      16     #include "global_variables.h"
+  302 sample.c      17     #include "ARP_function.h"
+  303 sample.c      18     #include "ping_function.h"
+  340 sample.c      19     
+  341 sample.c      20     void main(void)
+  342 sample.c      21     {
+  343 sample.c      22             ARP_PACKET *arp_packet; /* ARPƒpƒPƒbƒg\‘¢‘Ì */
+  344 sample.c      23             UDP_PACKET *udp_packet; /* pingƒpƒPƒbƒg\‘¢‘Ì */
+  345 sample.c      24             unsigned char packet_type; /* ƒpƒPƒbƒgƒ^ƒCƒv”»’è—p */
+  346 sample.c      25             char lcd_data[25];
+  347 sample.c      26             int i,j,k;
+  348 sample.c      27             /* ‘—MŒ³IPƒAƒhƒŒƒX  10.1.68.160*/
+  349 sample.c      28             src_IP[0]=10;
+  350 sample.c      29             src_IP[1]=1;
+  351 sample.c      30             src_IP[2]=69;
+  352 sample.c      31             src_IP[3]=139;
+  353 sample.c      32     
+  354 sample.c      33             H8_register_init(); /* H8ƒŒƒWƒXƒ^‰Šú‰»EÝ’è */
+  355 sample.c      34     
+  356 sample.c      35             LCD_init(); /* LCD‰Šú‰» */
+  357 sample.c      36     
+  358 sample.c      37             NIC_init(); /* NIC‰Šú‰» */
+  359 sample.c      38             LCD_control(0x01);/*LCD clear*/
+  360 sample.c      39             LCD_control(0x80); /* ƒJ[ƒ\ƒ‹‚ð1s–Ú‚Ìæ“ª‚ÉˆÚ“®‚·‚é */
+  361 sample.c      40             ms_timer(1000); /* Wait */
+  362 sample.c      41     
+  363 sample.c      42             while(1){
+  364 sample.c      43                     packet_type = 0;
+  365 sample.c      44                     
+  366 sample.c      45                     if (packet_receive(packet) != 1) /* ƒpƒPƒbƒg‚ðŽóM‚µ‚½‚Æ‚« */
+  367 sample.c      46                     {
+  368 sample.c      47                             arp_packet = (ARP_PACKET *)packet; /* packet‚ðARP_PACKET\‘¢‘Ì‚É“–‚Ä‚Í‚ß‚é */
+  369 sample.c      48                             udp_packet = (UDP_PACKET *)packet; /* packet‚ðUDP_PACKET\‘¢‘Ì‚É“–‚Ä‚Í‚ß‚é */
+  370 sample.c      49                             if ((arp_packet -> eth_ethernet_type == 0x0806) && 
+  371 sample.c      50                                     /* ARP‚ÌƒpƒPƒbƒg‚Ì‚Æ‚« */
+  372 sample.c      51                                     (IP_compare(arp_packet -> arp_dst_IP, src_IP) == 0) && 
+  373 sample.c      52                                     /* ƒpƒPƒbƒg‚É‹Lq‚³‚ê‚Ä‚¢‚éˆ¶æIPƒAƒhƒŒƒX‚ª‘—MŒ³IPƒAƒhƒŒƒX‚Éˆê’v‚µ‚½‚Æ‚« */
+  374 sample.c      53                                     (arp_packet -> arp_operation == 1)
+  375 sample.c      54                                     /* ARP Request‚Ì‚Æ‚« */
+  376 sample.c      55                                     )
+  377 sample.c      56                             {
+  378 sample.c      57                                     ARP_reply(packet);
+  379 sample.c      58                             }
+  380 sample.c      59                             if ((udp_packet -> eth_ethernet_type == 0x0800) && 
+  381 sample.c      60                                     /* IP‚ÌƒpƒPƒbƒg‚Ì‚Æ‚« */
+  382 sample.c      61                                     (IP_compare(udp_packet -> ip_dst_IP, src_IP) == 0) && 
+  383 sample.c      62                                     /* ƒpƒPƒbƒg‚É‹Lq‚³‚ê‚Ä‚¢‚éˆ¶æIPƒAƒhƒŒƒX‚ª‘—MŒ³IPƒAƒhƒŒƒX‚Éˆê’v‚µ‚½‚Æ‚« */
+  384 sample.c      63                                     (udp_packet -> ip_protocol == 17) && 
+  385 sample.c      64                                     /* ICMP‚ÌƒpƒPƒbƒg‚Ì‚Æ‚« */
+  386 sample.c      65                                     (udp_packet -> udp_dst_port == 30000)
+  387 sample.c      66                                     /* UDPƒ|[ƒg‚ª12345‚Ì‚Æ‚« */
+  388 sample.c      67                                     )
+  389 sample.c      68                             {
+  390 sample.c      69                                     LCD_control(0x80);
+  391 sample.c      70                                     for(i=0;i<25;i++)
+  392 sample.c      71                                     {
+  393 sample.c      72                                             if(i<8)lcd_data[i] = packet[42+i];
+  394 sample.c      73                                             else lcd_data[i] = ' ';
+  395 sample.c      74                                     }
+  396 sample.c      75                     LCD_print(lcd_data);
+  397 sample.c      76                     LCD_control(0x80);
+  398 sample.c      77                     ms_timer(1500);
+  399 sample.c      78                             }
+  400 sample.c      79                     }
+  401 sample.c      80             }
+  402 sample.c      81     }
+H8S,H8/300 SERIES C COMPILER (Ver. 2.0D for Evaluation) 9-Mar-2015  18:36:15  PAGE   1
 
 *********** ERROR INFORMATION **********
 
 FILE NAME: sample.c
 
 File        Line Erno Lvl  Message
-sample.c     262 2202 (E)  NUMBER OF PARAMETERS MISMATCH
-sample.c     262 2500 (E)  ILLEGAL TOKEN: ".0"
-sample.c     373 1016 (W)  ARGUMENT MISMATCH
-sample.c     374 2202 (E)  NUMBER OF PARAMETERS MISMATCH
+sample.c       8 2005 (E)  CANNOT OPEN INCLUDE
+sample.c       9 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      11 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      12 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      13 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      14 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      16 2005 (E)  CANNOT OPEN INCLUDE
+sample.c      17 2005 (E)  CANNOT OPEN INCLUDE
+ping_funct     5 2225 (E)  UNDECLARED NAME: "PING_PACKET"
+ping_funct     5 2225 (E)  UNDECLARED NAME: "ping_packet"
+ping_funct     7 2500 (E)  ILLEGAL TOKEN: ")"
+ping_funct    11 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    11 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    11 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    11 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    12 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    12 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    17 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    17 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    17 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    17 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    18 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    18 2233 (E)  ILLEGAL ARRAY REFERENCE
+ping_funct    21 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    24 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    27 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    30 2204 (E)  ILLEGAL MEMBER REFERENCE
+ping_funct    33 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      22 2225 (E)  UNDECLARED NAME: "ARP_PACKET"
+sample.c      22 2225 (E)  UNDECLARED NAME: "arp_packet"
+sample.c      23 2225 (E)  UNDECLARED NAME: "UDP_PACKET"
+sample.c      23 2225 (E)  UNDECLARED NAME: "udp_packet"
+sample.c      24 2500 (E)  ILLEGAL TOKEN: "unsigned"
+sample.c      24 2225 (E)  UNDECLARED NAME: "packet_type"
+sample.c      25 2500 (E)  ILLEGAL TOKEN: "char"
+sample.c      25 2225 (E)  UNDECLARED NAME: "lcd_data"
+sample.c      25 2233 (E)  ILLEGAL ARRAY REFERENCE
+sample.c      26 2500 (E)  ILLEGAL TOKEN: "int"
+sample.c      26 2225 (E)  UNDECLARED NAME: "i"
+sample.c      26 2225 (E)  UNDECLARED NAME: "j"
+sample.c      26 2225 (E)  UNDECLARED NAME: "k"
+sample.c      47 2500 (E)  ILLEGAL TOKEN: ")"
+sample.c      48 2500 (E)  ILLEGAL TOKEN: ")"
+sample.c      49 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      51 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      51 2201 (E)  CANNOT CONVERT PARAMETER: "1"
+sample.c      53 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      59 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      61 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      61 2201 (E)  CANNOT CONVERT PARAMETER: "1"
+sample.c      63 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      65 2204 (E)  ILLEGAL MEMBER REFERENCE
+sample.c      72 2233 (E)  ILLEGAL ARRAY REFERENCE
+sample.c      73 2233 (E)  ILLEGAL ARRAY REFERENCE
 
-NUMBER OF ERRORS:          3 
-NUMBER OF WARNINGS:        1 
+NUMBER OF ERRORS:         54 
+NUMBER OF WARNINGS:        0 

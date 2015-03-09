@@ -26,6 +26,23 @@
 #define DISCONNECT_REQUEST 2 /* 切断リクエスト */
 #define DISCONNECT_REPLY   3 /* 切断リプライ */
 
+
+char printWord( char in1, char in2){
+	char c;
+	char write_str[10][11] ={"ｱｲｳｴｵABCDE"
+							,"ｶｷｸｹｺFGHIJ"
+							,"ｻｼｽｾｿKLMNO"
+							,"ﾀﾁﾂﾃﾄPQRST"
+							,"ﾅﾆﾇﾈﾉUVWXY"
+							,"ﾊﾋﾌﾍﾎZ?!-/"
+							,"ﾏﾐﾑﾒﾓ\&$$$"
+							,"ﾔ(ﾕ)ﾖ*#$$$"
+							,"ﾗﾘﾙﾚﾛ12345"
+							,"ﾜｦﾝﾞﾟ67890"};
+	c = write_str[in1-1][in2-1];
+	return c;
+}
+
 int main(void)
 {
     WSADATA wsa_data;
@@ -37,9 +54,11 @@ int main(void)
     char key, c;
     unsigned short cursor;
     unsigned long argp;
+	char insert1, insert2;
+	char text_data[17];
     char input_buffer[256];
-    char text_data[16];
     char text_buffer[256];
+	char text[16][2];
 
     /* Winsockの初期化 *//* WinSockバージョン2.0 */
     WSAStartup(MAKEWORD(2, 0), &wsa_data);
@@ -89,14 +108,38 @@ int main(void)
 		}
 		else{
 			enter_count = 0;
-			text_data[i] = c;
+			text_buffer[i] = c;
 		}
 		if(enter_count == 2){
-			text_data[++i] = '\0';
+			text_buffer[++i] = '\0';
 			break;
 		}
 	}
 
+	/*送信データからサーバ側で使う*/
+	for(i=0; i<32; i+=2){
+		if(text_buffer[i] != '\0')
+			insert1 = text_buffer[i];
+		else break;
+		if(text_buffer[i+1] != '\0')
+			insert2 = text_buffer[i+1];
+		else break;
+		/*数字に変更*/
+		if(insert1 == 48){
+			insert1 = 10;
+		}
+		else{
+			insert1 = insert1 - 48;
+		}
+		if(insert2 == 48){
+			insert2 = 10;
+		}
+		else{
+			insert2 = insert2 - 48;
+		}
+		text_data[i/2] = printWord(insert1, insert2);
+	}
+	
     /* テキスト・データのパケットの送信 */
     sendto(src_socket,
          text_data, /* テキスト・データ */
@@ -104,7 +147,7 @@ int main(void)
          0,
          (LPSOCKADDR)&dst, /* サーバのソケット・アドレス */
          sizeof(dst)
-        );
-
-     return 0;
+    );
+		
+    return 0;
 }

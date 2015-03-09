@@ -228,17 +228,17 @@ char matrix_key_read(void)
 				case 0x12 : key ='2'; break;
 				case 0x14 : key ='3'; break;
 				case 0x18 : key ='4'; break;
-				
+
 				case 0x21 : key ='5'; break;
 				case 0x22 : key ='6'; break;
 				case 0x24 : key ='7'; break;
 				case 0x28 : key ='8'; break;
-				
+
 				case 0x41 : key ='9'; break;
 				case 0x42 : key ='.'; break;
 				case 0x44 : key ='0'; break;
 				case 0x48 : key ='#'; break;
-				
+
 				default : key = 0; break;
 			}
 		}

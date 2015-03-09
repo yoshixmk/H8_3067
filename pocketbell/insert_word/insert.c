@@ -67,6 +67,6 @@ int main(void)
 		printWord(insert1, insert2);
 	}
 	putchar('\n');
-	/*printWord(insert1, insert2);*/
+while(1);
 	return 0;
 }

@@ -1,4 +1,54 @@
-sample.c(262) : 2202 (E) NUMBER OF PARAMETERS MISMATCH
-sample.c(262) : 2500 (E) ILLEGAL TOKEN: ".0"
-sample.c(373) : 1016 (W) ARGUMENT MISMATCH
-sample.c(374) : 2202 (E) NUMBER OF PARAMETERS MISMATCH
+sample.c(8) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(9) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(11) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(12) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(13) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(14) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(16) : 2005 (E) CANNOT OPEN INCLUDE
+sample.c(17) : 2005 (E) CANNOT OPEN INCLUDE
+..\TOOL\include\ping_function.h(5) : 2225 (E) UNDECLARED NAME: "PING_PACKET"
+..\TOOL\include\ping_function.h(5) : 2225 (E) UNDECLARED NAME: "ping_packet"
+..\TOOL\include\ping_function.h(7) : 2500 (E) ILLEGAL TOKEN: ")"
+..\TOOL\include\ping_function.h(11) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(11) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(11) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(11) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(12) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(12) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(17) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(17) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(17) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(17) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(18) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(18) : 2233 (E) ILLEGAL ARRAY REFERENCE
+..\TOOL\include\ping_function.h(21) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(24) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(27) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(30) : 2204 (E) ILLEGAL MEMBER REFERENCE
+..\TOOL\include\ping_function.h(33) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(22) : 2225 (E) UNDECLARED NAME: "ARP_PACKET"
+sample.c(22) : 2225 (E) UNDECLARED NAME: "arp_packet"
+sample.c(23) : 2225 (E) UNDECLARED NAME: "UDP_PACKET"
+sample.c(23) : 2225 (E) UNDECLARED NAME: "udp_packet"
+sample.c(24) : 2500 (E) ILLEGAL TOKEN: "unsigned"
+sample.c(24) : 2225 (E) UNDECLARED NAME: "packet_type"
+sample.c(25) : 2500 (E) ILLEGAL TOKEN: "char"
+sample.c(25) : 2225 (E) UNDECLARED NAME: "lcd_data"
+sample.c(25) : 2233 (E) ILLEGAL ARRAY REFERENCE
+sample.c(26) : 2500 (E) ILLEGAL TOKEN: "int"
+sample.c(26) : 2225 (E) UNDECLARED NAME: "i"
+sample.c(26) : 2225 (E) UNDECLARED NAME: "j"
+sample.c(26) : 2225 (E) UNDECLARED NAME: "k"
+sample.c(47) : 2500 (E) ILLEGAL TOKEN: ")"
+sample.c(48) : 2500 (E) ILLEGAL TOKEN: ")"
+sample.c(49) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(51) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(51) : 2201 (E) CANNOT CONVERT PARAMETER: "1"
+sample.c(53) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(59) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(61) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(61) : 2201 (E) CANNOT CONVERT PARAMETER: "1"
+sample.c(63) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(65) : 2204 (E) ILLEGAL MEMBER REFERENCE
+sample.c(72) : 2233 (E) ILLEGAL ARRAY REFERENCE
+sample.c(73) : 2233 (E) ILLEGAL ARRAY REFERENCE
